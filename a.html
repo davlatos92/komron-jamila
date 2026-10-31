@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Внутри фотографии — приглашение</title>
+<link rel="stylesheet" href="assets/common.css?v=3">
+<style>
+  .paper {
+    background:
+      radial-gradient(ellipse at 50% 45%, rgba(255,255,255,.55), transparent 60%),
+      repeating-linear-gradient(0deg, rgba(120,90,60,.04) 0 2px, transparent 2px 6px),
+      #efe3cf;
+  }
+  .title { text-align: center; font-style: italic; line-height: 1.15; color: var(--ink); }
+  .title b { display: block; font: 400 1.5em var(--script); font-style: normal; color: var(--gold); }
+  .hint { text-align: center; color: var(--ink-soft); letter-spacing: .15em; text-transform: uppercase; }
+  .hint--light { color: rgba(59,47,42,.75); }
+  .shadow { filter: drop-shadow(0 .6vmin 1.2vmin rgba(60,40,20,.35)); }
+  .sticker { filter: drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff) drop-shadow(0 1px 0 #fff) drop-shadow(0 -1px 0 #fff); }
+  .year { color: #fff; font-weight: 400; text-align: center; letter-spacing: .05em; text-shadow: 0 0 2vmin rgba(255,255,255,.4); }
+  .names { font-family: var(--script); text-align: center; color: var(--ink); line-height: 1; }
+  .names span { color: var(--gold); }
+  .line { text-align: center; color: var(--ink); font-style: italic; }
+  .date { text-align: center; letter-spacing: .25em; color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="stage" id="stage"></div>
+<div class="grain"></div>
+<div class="draft-badge">Вариант A · <a href="b.html">две звезды B →</a></div>
+<div class="caption" data-cap="0">Жил-был мальчик…</div>
+<div class="caption" data-cap="1">Годы летели…</div>
+<div class="caption" data-cap="2">…а где-то росла девочка</div>
+<div class="caption" data-cap="3">И однажды их пути сошлись</div>
+<div class="track" id="track"></div>
+<section class="details" data-details></section>
+
+<script src="assets/common.js?v=3"></script>
+<script src="assets/art.js?v=3"></script>
+<script src="assets/depth.js?v=3"></script>
+<script>
+const w = WEDDING;
+
+// Полароид: белая рамка, окно 2..34 × 2..40 (в единицах рамки 36×48), подпись снизу
+function polaroid(inner, caption) {
+  return `<svg viewBox="0 0 36 48" width="100%" height="100%" preserveAspectRatio="none">
+    <path fill-rule="evenodd" fill="#fbf8f2" d="M0 0H36V48H0Z M2 2V40H34V2Z"/>
+    ${inner ? `<svg x="2" y="2" width="32" height="38" viewBox="0 0 100 120" preserveAspectRatio="xMidYMid slice">${inner}</svg>` : ''}
+    <text x="18" y="45.6" text-anchor="middle" font-family="Marck Script" font-size="4.2" fill="#6b5545">${caption}</text>
+  </svg>`;
+}
+const strip = s => s.replace(/<\/?svg[^>]*>/g, '');
+
+// Камера смотрит в его фото (окно на глубине 299, на экране x=-21, y=-5)
+const HZ = 299, HX = -21 * HZ / 1000, HY = -5 * HZ / 1000;
+const HV = { x: HX, y: HY, z: 150 };          // откуда «рисуем» его фото изнутри
+const RZ = 2300, RY = -0.9;
+const RV = { x: 0, y: RY, z: 2150 };           // её фото в небе
+const FV = { x: 0, y: 0, z: 3050 };            // финальная точка камеры
+const SV = z => ({ x: 0, y: 0, z: z - 600 });  // облака и годы — «как видно с 600»
+
+const sepia = { mtn: '#b59a76', mtn2: '#e9dcc5', hill: '#9c7f5c', trunk: '#6d553c', leaf: '#8a7350', leaf2: '#7b6446', grass: '#8a6f4e', grass2: '#76603f' };
+
+// Лист альбома с вырезом под его фото (чуть больше окна — край прячется под рамкой)
+const pageHole = 'data:image/svg+xml,' + encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 700" preserveAspectRatio="none">
+     <path fill-rule="evenodd" d="M0 0H700V700H0Z M312 325V365H346V325Z"/></svg>`);
+
+const layers = [
+  // ---- Альбом ----
+  { z: 300, w: 700, h: 700, cls: 'paper', near: [20, 140],
+    html: `<style>.paper{-webkit-mask:url("${pageHole}") 0 0/100% 100%;mask:url("${pageHole}") 0 0/100% 100%}</style>` },
+  { z: 299, y: -44, w: 92, h: 16, font: 4.6, cls: 'title',
+    html: `<b>${w.groom[0]} & ${w.bride[0]}</b>Каждая история любви начинается задолго до встречи`, near: [40, 160] },
+  { z: 299, y: 37, w: 70, h: 6, font: 2.8, cls: 'hint', html: 'листайте вниз ↓', show: [-1, 0, 0.015, 0.04] },
+  { z: 299, x: -21, y: -2, w: 36, h: 48, cls: 'shadow', html: polaroid('', `он · ${w.hisYear + 4}`) },
+  { z: 299, x: 21, y: 1, w: 36, h: 48, rot: 4, cls: 'shadow', html: polaroid(Art.photoImg('her', 'xMidYMin'), `она · ${w.herYear + 4}`) },
+
+  // ---- Внутри его фото (сепия) ----
+  { group: 'his', view: HV, z: 1500, x: 16, y: -22, w: 26, h: 26, html: Art.sun('#f6ecd4'), far: [2400, 3000] },
+  { group: 'his', view: HV, z: 900, y: 22, w: 190, h: 52, html: Art.mountains(sepia.mtn, sepia.mtn2) },
+  { group: 'his', view: HV, z: 560, y: 26, w: 210, h: 40, html: Art.hills(sepia.hill) },
+  { group: 'his', view: HV, z: 470, x: 22, y: 6, w: 26, h: 42, html: Art.tree(sepia.trunk, sepia.leaf, sepia.leaf2) },
+  { group: 'his', view: HV, z: 400, x: -12, y: 12, w: 20, h: 40, cls: 'sticker', html: Art.figure('his', 'sepia') },
+  { group: 'his', view: HV, z: 330, y: 34, w: 160, h: 24, html: Art.grass(sepia.grass, sepia.grass2) },
+
+  // ---- Небо: облака и годы ----
+  ...[[1000, -48, -18], [1120, 52, 22], [1260, -40, 30], [1400, 46, -24], [1540, -56, 6], [1680, 36, 30],
+      [1820, -34, -28], [1960, 58, 4], [2080, -50, 26]].map(([z, x, y], i) =>
+    ({ view: SV(z), z, x, y, w: 80 + (i % 3) * 14, h: 36 + (i % 2) * 8, html: Art.cloud(i % 2 ? '#ffffff' : '#fff7ee'), show: [0.25, 0.31] })),
+  ...[0, 1, 2, 3].map(i => ({
+    view: SV(1180 + i * 240), z: 1180 + i * 240, x: i % 2 ? 16 : -16, y: -6, w: 60, h: 20, font: 16, cls: 'year',
+    html: String(w.hisYear + 6 + i * 6), near: [40, 200], far: [380, 600], opacity: .9, show: [0.3, 0.36],
+  })),
+
+  // ---- Её фото в небе ----
+  { view: RV, z: RZ, y: 6, w: 72, h: 96, cls: 'shadow', html: polaroid('', `она · ${w.herYear + 4}`), far: [1400, 2200], show: [0.3, 0.36] },
+  { group: 'her', view: RV, z: 4200, x: -22, y: -26, w: 34, h: 34, html: Art.sun('#fff3d6'), far: [3000, 4000] },
+  { group: 'her', view: RV, z: 3700, y: 30, w: 330, h: 60, html: Art.hills('#c8b98a'), far: [2600, 3400] },
+  { group: 'her', view: RV, z: 2700, x: -20, y: 8, w: 32, h: 27, html: Art.house('#e2b49c', '#a96b5a') },
+  { group: 'her', view: RV, z: 2460, y: 30, w: 220, h: 42, html: Art.flowers('#b9b46f', ['#f3c4c9', '#ffffff', '#f6d36e', '#e8a0a8']) },
+  { group: 'her', view: RV, z: 2400, x: 13, y: 12, w: 20, h: 40, cls: 'sticker', html: Art.figure('her', 'soft') },
+
+  // ---- Финал: двое детей рядом, имена ----
+  { view: FV, z: 3380, x: -10, y: -8, w: 16, h: 32, cls: 'sticker', html: Art.figure('his', 'full'), show: [0.86, 0.93] },
+  { view: FV, z: 3380, x: 10, y: -8, w: 16, h: 32, cls: 'sticker', html: Art.figure('her', 'full'), show: [0.86, 0.93] },
+  { view: FV, z: 3390, y: -31, w: 16, h: 14, html: Art.heart('#c0705f'), show: [0.91, 0.97] },
+  { view: FV, z: 3250, y: 18, w: 96, h: 14, font: 10.5, cls: 'names',
+    html: `${w.groom} <span>&</span> ${w.bride}`, show: [0.9, 0.96] },
+  { view: FV, z: 3250, y: 28, w: 96, h: 7, font: 4.4, cls: 'line', html: 'приглашают вас на свою свадьбу', show: [0.92, 0.97] },
+  { view: FV, z: 3250, y: 36, w: 96, h: 7, font: 4.4, cls: 'date', html: w.dateText, show: [0.93, 0.98] },
+  { view: FV, z: 3250, y: 50, w: 70, h: 6, font: 2.8, cls: 'hint hint--light', html: 'подробности ↓', show: [0.97, 0.995] },
+];
+
+const captions = [...document.querySelectorAll('[data-cap]')];
+const capShow = [[0.17, 0.2, 0.3, 0.34], [0.4, 0.44, 0.54, 0.58], [0.6, 0.64, 0.72, 0.76], [0.79, 0.82, 0.88, 0.91]];
+
+Depth.create({
+  stage: document.getElementById('stage'),
+  track: document.getElementById('track'),
+  length: 14,
+  groups: [
+    { id: 'his', z: HZ, x: -21, y: -5, w: 32, h: 38 },
+    { id: 'her', view: RV, z: RZ, x: 0, y: 0, w: 64, h: 76 },
+  ],
+  camera: [
+    { p: 0, z: 0, x: 0, y: 0 },
+    { p: 0.04, z: 0, x: 0, y: 0 },
+    { p: 0.16, z: 150, x: HX, y: HY, ease: 1 },
+    { p: 0.24, z: 300, x: HX, y: HY },
+    { p: 0.32, z: 560, x: HX, y: HY },
+    { p: 0.44, z: 1150, x: 0, y: 0, ease: 1 },
+    { p: 0.58, z: 1900, x: 0, y: RY },
+    { p: 0.66, z: 2150, x: 0, y: RY },
+    { p: 0.74, z: 2300, x: 0, y: RY },
+    { p: 0.86, z: 2750, x: 0, y: RY },
+    { p: 1, z: 3050, x: 0, y: 0, ease: 1 },
+  ],
+  sky: [
+    { p: 0, top: '#e7d6b6', bottom: '#d6bf98' },
+    { p: 0.26, top: '#e7d6b6', bottom: '#d6bf98' },
+    { p: 0.4, top: '#8db8dc', bottom: '#eaf1f4' },
+    { p: 0.58, top: '#9ec3e0', bottom: '#f3e6da' },
+    { p: 0.7, top: '#f2c2ae', bottom: '#fbe6cf' },
+    { p: 1, top: '#f4d6cf', bottom: '#fbf0e4' },
+  ],
+  layers,
+  onFrame(p) {
+    captions.forEach((c, i) => { c.style.opacity = Depth.showWindow(capShow[i], p).toFixed(3); });
+  },
+});
+</script>
+</body>
+</html>
