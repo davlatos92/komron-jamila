@@ -132,6 +132,21 @@ body {
 }
 .btn:hover, .btn.is-active { background: var(--gold); color: #fff; }
 .btn--solid { background: var(--gold); color: #fff; }
+.rsvp__name {
+  display: block; width: 100%; margin: 4px 0 14px; padding: 12px 16px;
+  font: 20px var(--serif); color: inherit; text-align: center;
+  background: transparent; border: 1px solid rgba(176, 141, 87, .6); border-radius: 12px;
+}
+.rsvp__name::placeholder { color: inherit; opacity: .5; }
+.rsvp__name[hidden] { display: none; }
+.rsvp__count { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 16px; font-size: 20px; }
+.stepper { display: flex; align-items: center; gap: 4px; }
+.stepper button {
+  width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--gold);
+  background: transparent; color: inherit; font: 24px/1 var(--serif); cursor: pointer;
+}
+.stepper b { min-width: 34px; font-size: 26px; font-weight: 500; }
+.rsvp__thanks.is-bad { color: #e8a0a8; }
 .rsvp__buttons { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
 .rsvp__thanks { margin: 16px 0 0; font-size: 23px; font-style: italic; }
 .details__sign { font-family: var(--script); font-size: 40px; margin: 36px 0 0; color: var(--gold); }

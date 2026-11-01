@@ -131,7 +131,8 @@ const Sky = (() => {
       c.beginPath(); c.arc(x, y, r * 3.5, 0, Math.PI * 2); c.fill();
       c.fillStyle = '#fff';
       c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
-      if (LABELS[k]) {
+      // у края круга подпись обрезалась бы — подписываем только звёзды ближе к центру
+      if (LABELS[k] && Math.hypot(x - cx, y - cy) < R * 0.8) {
         c.fillStyle = 'rgba(255,240,215,.75)';
         c.font = `italic ${Math.round(size / 34)}px "Cormorant Garamond", serif`;
         c.fillText(LABELS[k], x + r + 4, y - r - 2);

@@ -8,7 +8,7 @@
 <meta name="description" content="9 ноября 2026 · 18:00 · «Дидор», Душанбе">
 <meta property="og:title" content="Комрон & Джамиля приглашают вас на свадьбу">
 <meta property="og:description" content="9 ноября 2026 · 18:00 · «Дидор», Душанбе">
-<link rel="stylesheet" href="assets/common.css?v=5">
+<link rel="stylesheet" href="assets/common.css?v=6">
 <style>
   html.locked, html.locked body { overflow: hidden; }
   body { background: #070a18; }
@@ -56,7 +56,7 @@
   .names .date { font-style: normal; letter-spacing: .18em; margin-top: 1.4vh; font-size: clamp(22px, 5.6vw, 30px); }
   .chartbox { top: 45%; }
   .chartbox canvas { width: min(84vw, 56vh); height: min(84vw, 56vh); display: block; margin: 0 auto; }
-  .chartbox h3 { font-weight: 500; font-size: clamp(18px, 4.6vw, 24px); letter-spacing: .08em; text-transform: uppercase; margin: 2vh 0 .8vh; color: #d6b780; }
+  .chartbox h3 { font-weight: 500; font-size: clamp(32px, 8.6vw, 48px); line-height: 1.1; letter-spacing: .03em; margin: 2vh 0 .8vh; color: #f3dcae; text-shadow: 0 0 18px rgba(214, 183, 128, .35); }
   .chartbox p { margin: 0 auto; font-style: italic; font-size: clamp(22px, 5.6vw, 30px); line-height: 1.25; width: min(90vw, 560px); }
   .chartbox .wish { margin-top: 1.6vh; font-size: clamp(18px, 4.6vw, 22px); color: #f3dcae; animation: glow 2.4s ease-in-out infinite; }
   .flash { position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, #fff6e0, rgba(255, 246, 224, 0) 70%); opacity: 0; pointer-events: none; }
@@ -86,6 +86,10 @@
   }
   .gate.is-open { opacity: 0; transform: scale(1.15); pointer-events: none; }
   .gate__kicker { margin: 0; font-size: clamp(15px, 4vw, 18px); letter-spacing: .3em; text-transform: uppercase; color: #d6b780; }
+  .gate__for { margin: 0; max-height: 0; opacity: 0; overflow: hidden; transition: max-height .8s ease, opacity .8s ease; }
+  .gate__for.is-on { max-height: 160px; opacity: 1; }
+  .gate__for small { display: block; font-size: clamp(15px, 4vw, 18px); font-style: italic; opacity: .75; }
+  .gate__for b { display: block; font: 400 clamp(30px, 8vw, 44px)/1.15 var(--script); color: #f3dcae; }
   .gate__names { margin: 0; font: 400 clamp(52px, 14vw, 86px)/1.05 var(--script); color: #fbefd8; }
   .gate__names span { color: #d6b780; }
   .gate__date { margin: 0; font-size: clamp(22px, 5.8vw, 30px); letter-spacing: .12em; }
@@ -202,6 +206,7 @@
 
 <div class="gate" id="gate">
   <p class="gate__kicker">Приглашение на свадьбу</p>
+  <p class="gate__for" id="gateFor"><small>персонально для</small><b id="gateGuest"></b></p>
   <button class="seal" id="seal" aria-label="Открыть приглашение">
     <span class="seal__ring"></span><span class="seal__ring seal__ring--2"></span>
     <span class="seal__face" id="sealFace"></span>
@@ -224,9 +229,9 @@
 <div class="track" id="track"></div>
 <section class="details details--night" data-details id="details"></section>
 
-<script src="assets/common.js?v=5"></script>
-<script src="assets/art.js?v=5"></script>
-<script src="assets/sky.js?v=5"></script>
+<script src="assets/common.js?v=6"></script>
+<script src="assets/art.js?v=6"></script>
+<script src="assets/sky.js?v=6"></script>
 <script>
 const w = WEDDING;
 const weddingYear = new Date(w.date).getFullYear();
@@ -250,10 +255,15 @@ her.querySelector('.pstar__label').textContent = `${w.bride} · ${w.herYear}`;
 document.querySelector('[data-cap="0"]').textContent =
   `Звезда ${w.groomGen} зажглась в ${w.hisYear}-м, звезда ${w.brideGen} — в ${w.herYear}-м`;
 $('names').innerHTML = `<h1>${w.groom}<br class="br-m"> <span>&</span> ${w.bride}</h1><p>приглашают вас на свою свадьбу</p><p class="date">${w.dateText} · ${weddingTime()}</p>`;
-$('chartTitle').textContent = `Небо над ${w.sky.city} · ${w.dateText} · ${w.sky.timeText}`;
+$('chartTitle').textContent = `${w.dateText} · ${w.sky.timeText}`;
 $('sealFace').textContent = `${w.groom[0]}&${w.bride[0]}`;
 $('gateNames').innerHTML = `${w.groom} <span>&</span> ${w.bride}`;
 $('gateDate').textContent = `${w.dateText} · ${weddingTime()}`;
+guestReady.then(g => {
+  if (!g || !$('gateFor')) return;
+  $('gateGuest').textContent = g.name;
+  $('gateFor').classList.add('is-on');
+});
 
 // Разбиваем текст на буквы, чтобы они проявлялись по очереди
 function splitText(el) {

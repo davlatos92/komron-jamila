@@ -17,6 +17,8 @@ const WEDDING = {
     ['19:30', 'Праздничный ужин'],
     ['22:30', 'Свадебный торт'],
   ],
+  // Ссылка веб-приложения Google Apps Script (см. apps-script/Code.gs) — сюда приходят ответы гостей
+  api: '',
   // Небо для карты звёзд (концепция B) — в момент начала праздника
   sky: { lat: 38.56, lon: 68.78, city: 'Душанбе', time: '2026-11-09T18:00:00+05:00', timeText: '18:00' },
 };
@@ -24,6 +26,21 @@ const WEDDING = {
 const TZ = 'Asia/Dushanbe';
 const weddingWeekday = () => new Date(WEDDING.date).toLocaleDateString('ru-RU', { weekday: 'long', timeZone: TZ });
 const weddingTime = () => new Date(WEDDING.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: TZ });
+
+// Локально (dev/mock_server.py) API живёт на /api
+const API_URL = WEDDING.api || (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? '/api' : '');
+
+async function api(params) {
+  const u = new URL(API_URL, location.href);
+  for (const k in params) u.searchParams.set(k, params[k]);
+  const r = await fetch(u, { redirect: 'follow' });
+  return r.json();
+}
+
+// Гость из личной ссылки ?g=… — имя подгружается из таблицы
+const GUEST_ID = new URLSearchParams(location.search).get('g') || '';
+const guestReady = !GUEST_ID || !API_URL ? Promise.resolve(null)
+  : api({ action: 'guest', id: GUEST_ID }).then(r => (r.ok ? r : null)).catch(() => null);
 
 function initials() {
   return WEDDING.groom[0] + ' & ' + WEDDING.bride[0];
@@ -129,21 +146,6 @@ function addToCalendar() {
   window.open('https://calendar.google.com/calendar/render?' + q, '_blank', 'noopener');
 }
 
-async function shareInvite() {
-  const w = WEDDING;
-  const data = { title: `${w.groom} & ${w.bride}`, text: `Приглашение на свадьбу · ${w.dateText}`, url: location.href.split('#')[0] };
-  if (navigator.share) {
-    try { await navigator.share(data); } catch (e) { /* закрыли окно */ }
-    return;
-  }
-  try {
-    await navigator.clipboard.writeText(data.url);
-    showToast('Ссылка скопирована');
-  } catch (e) {
-    showToast(data.url);
-  }
-}
-
 // Блок с деталями под сценой: дата, отсчёт, место, программа, ответ гостя.
 function renderDetails(root) {
   const w = WEDDING;
@@ -183,8 +185,17 @@ function renderDetails(root) {
         </ul>
       </div>
 
-      <div class="details__card rsvp" data-rsvp data-reveal>
+      <div class="details__card rsvp" data-rsvp data-reveal ${API_URL ? '' : 'hidden'}>
         <p class="details__label">Вы с нами?</p>
+        <input class="rsvp__name" data-name placeholder="Ваше имя и фамилия" maxlength="80" autocomplete="name" ${GUEST_ID ? 'hidden' : ''}>
+        <div class="rsvp__count">
+          <span>Сколько вас будет</span>
+          <div class="stepper">
+            <button type="button" data-step="-1" aria-label="Меньше">−</button>
+            <b data-count>1</b>
+            <button type="button" data-step="1" aria-label="Больше">+</button>
+          </div>
+        </div>
         <div class="rsvp__buttons">
           <button class="btn btn--solid" data-answer="yes">С радостью приду</button>
           <button class="btn" data-answer="no">К сожалению, не смогу</button>
@@ -192,7 +203,6 @@ function renderDetails(root) {
         <p class="rsvp__thanks" hidden></p>
       </div>
 
-      <button class="btn btn--ghost" data-share data-reveal>Поделиться приглашением</button>
       <p class="details__sign" data-reveal>С любовью, ${initials()}</p>
     </div>`;
 
@@ -217,23 +227,61 @@ function renderDetails(root) {
   tick();
   setInterval(tick, 1000);
 
+  // Ответ гостя уходит в таблицу; по личной ссылке имя уже известно
   const rsvp = root.querySelector('[data-rsvp]');
-  rsvp.addEventListener('click', e => {
+  const nameInput = rsvp.querySelector('[data-name]');
+  const thanks = rsvp.querySelector('.rsvp__thanks');
+  const countEl = rsvp.querySelector('[data-count]');
+  let count = 1, sending = false;
+  const say = (text, bad) => { thanks.textContent = text; thanks.hidden = false; thanks.classList.toggle('is-bad', !!bad); };
+  const mark = answer => rsvp.querySelectorAll('[data-answer]').forEach(x => x.classList.toggle('is-active', x.dataset.answer === answer));
+
+  rsvp.addEventListener('click', async e => {
+    const step = e.target.closest('[data-step]');
+    if (step) {
+      count = Math.max(1, Math.min(10, count + Number(step.dataset.step)));
+      countEl.textContent = count;
+      return;
+    }
     const b = e.target.closest('[data-answer]');
-    if (!b) return;
+    if (!b || sending) return;
     const yes = b.dataset.answer === 'yes';
-    const thanks = rsvp.querySelector('.rsvp__thanks');
-    thanks.textContent = yes ? 'Спасибо! Ждём вас 💛' : 'Жаль! Будем думать о вас в этот день.';
-    thanks.hidden = false;
-    rsvp.querySelectorAll('[data-answer]').forEach(x => x.classList.toggle('is-active', x === b));
-    if (yes) {
-      const r = b.getBoundingClientRect();
-      Confetti.burst(r.left + r.width / 2, r.top);
-      vibrate([20, 40, 20]);
+    const params = { action: 'answer', answer: b.dataset.answer, people: yes ? count : 0 };
+    if (GUEST_ID) params.id = GUEST_ID;
+    else {
+      params.name = nameInput.value.trim();
+      if (!params.name) { say('Напишите, пожалуйста, ваше имя', true); nameInput.focus(); return; }
+    }
+    sending = true;
+    say('Отправляем…');
+    try {
+      const r = await api(params);
+      if (!r.ok) throw new Error(r.error);
+      mark(b.dataset.answer);
+      say(yes ? 'Спасибо! Ждём вас 💛' : 'Жаль! Будем думать о вас в этот день.');
+      if (yes) {
+        const rc = b.getBoundingClientRect();
+        Confetti.burst(rc.left + rc.width / 2, rc.top);
+        vibrate([20, 40, 20]);
+      }
+    } catch (err) {
+      say('Не получилось отправить. Проверьте интернет и нажмите ещё раз.', true);
+    }
+    sending = false;
+  });
+  nameInput.addEventListener('input', () => thanks.classList.contains('is-bad') && (thanks.hidden = true));
+
+  // Личная ссылка: обращаемся по имени и показываем прошлый ответ
+  guestReady.then(g => {
+    if (!g) return;
+    root.querySelector('.details__kicker').textContent = g.name;
+    if (g.answer) {
+      mark(g.answer);
+      if (g.people) { count = g.people; countEl.textContent = count; }
+      say(g.answer === 'yes' ? 'Вы уже ответили: придёте. Можно изменить ответ.' : 'Вы ответили, что не сможете прийти. Можно изменить ответ.');
     }
   });
   root.querySelector('[data-calendar]').addEventListener('click', addToCalendar);
-  root.querySelector('[data-share]').addEventListener('click', shareInvite);
 
   // Блоки выплывают по мере прокрутки
   const io = new IntersectionObserver(entries => entries.forEach(en => {
