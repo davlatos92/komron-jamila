@@ -8,7 +8,7 @@
 <meta name="description" content="9 ноября 2026 · 18:00 · «Дидор», Душанбе">
 <meta property="og:title" content="Комрон & Джамиля приглашают вас на свадьбу">
 <meta property="og:description" content="9 ноября 2026 · 18:00 · «Дидор», Душанбе">
-<link rel="stylesheet" href="assets/common.css?v=8">
+<link rel="stylesheet" href="assets/common.css?v=9">
 <style>
   html.locked, html.locked body { overflow: hidden; }
   body { background: #070a18; }
@@ -55,10 +55,32 @@
   .names p { margin: 1.2vh 0 0; font-style: italic; font-size: clamp(24px, 6vw, 32px); }
   .names .date { font-style: normal; letter-spacing: .18em; margin-top: 1.4vh; font-size: clamp(22px, 5.6vw, 30px); }
   .chartbox { top: 45%; }
-  .chartbox canvas { width: min(84vw, 56vh); height: min(84vw, 56vh); display: block; margin: 0 auto; }
+  .chartbox canvas { width: min(84vw, 50vh); height: min(84vw, 50vh); display: block; margin: 0 auto; }
   .chartbox h3 { font-weight: 500; font-size: clamp(32px, 8.6vw, 48px); line-height: 1.1; letter-spacing: .03em; margin: 2vh 0 .8vh; color: #f3dcae; text-shadow: 0 0 18px rgba(214, 183, 128, .35); }
   .chartbox p { margin: 0 auto; font-style: italic; font-size: clamp(22px, 5.6vw, 30px); line-height: 1.25; width: min(90vw, 560px); }
-  .chartbox .wish { margin-top: 1.6vh; font-size: clamp(18px, 4.6vw, 22px); color: #f3dcae; animation: glow 2.4s ease-in-out infinite; }
+  canvas.fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 11; }
+
+  /* Кнопка желания: держите — кнопка наполняется золотом, звёзды слетаются к ней */
+  .wish-btn {
+    position: relative; overflow: hidden; pointer-events: auto; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    min-width: min(82vw, 340px); margin: 2vh auto 0; padding: 14px 28px;
+    border-radius: 999px; border: 1.5px solid #d6b780; background: rgba(214, 183, 128, .12); color: #fbefd8;
+    touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+    animation: wishPulse 2.2s ease-out infinite; transition: transform .2s;
+  }
+  .wish-btn__fill {
+    position: absolute; inset: 0; background: linear-gradient(90deg, #a07c46, #f3dcae);
+    transform: scaleX(var(--p, 0)); transform-origin: left; opacity: .9;
+  }
+  .wish-btn__label { position: relative; display: flex; align-items: center; gap: 10px; font: 500 clamp(22px, 5.8vw, 27px) var(--serif); text-shadow: 0 1px 6px rgba(0, 0, 0, .6); }
+  .wish-btn__label svg { width: 22px; height: 22px; fill: #f3dcae; animation: twinkle 1.6s ease-in-out infinite; }
+  .wish-btn small { position: relative; font-size: clamp(15px, 4vw, 17px); font-style: italic; opacity: .8; text-shadow: 0 1px 6px rgba(0, 0, 0, .6); }
+  .wish-btn.is-holding { animation: none; transform: scale(.96); box-shadow: 0 0 40px rgba(243, 220, 174, .55); }
+  @keyframes wishPulse { from { box-shadow: 0 0 0 0 rgba(243, 220, 174, .55); } to { box-shadow: 0 0 0 20px rgba(243, 220, 174, 0); } }
+  @keyframes twinkle { 50% { transform: scale(.7) rotate(45deg); opacity: .6; } }
+  .chartbox .wish-done { margin: 1.4vh auto 0; font-size: clamp(19px, 4.8vw, 24px); color: #f3dcae; opacity: 0; transition: opacity .8s; }
+  .chartbox .wish-done.is-on { opacity: 1; }
   .flash { position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, #fff6e0, rgba(255, 246, 224, 0) 70%); opacity: 0; pointer-events: none; }
   .caption {
     bottom: 17vh; width: min(92vw, 620px);
@@ -224,10 +246,16 @@
     <canvas id="chart"></canvas>
     <h3 id="chartTitle"></h3>
     <p>Так будет выглядеть небо в момент, когда начнётся наш праздник</p>
-    <p class="wish">Коснитесь неба и загадайте желание ✨</p>
+    <button class="wish-btn" id="wishBtn" type="button">
+      <span class="wish-btn__fill"></span>
+      <span class="wish-btn__label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z"/></svg><span id="wishLabel">Загадать желание</span></span>
+      <small id="wishSub">нажмите и удерживайте</small>
+    </button>
+    <p class="wish-done" id="wishDone">Ваше желание теперь горит на нашем небе</p>
   </div>
   <div class="flash" id="flash"></div>
 </div>
+<canvas class="fx" id="fx"></canvas>
 <div class="grain"></div>
 <div class="caption" data-cap="0"></div>
 <div class="caption" data-cap="1">Они долго кружили, не зная друг о друге…</div>
@@ -267,9 +295,9 @@
 <div class="track" id="track"></div>
 <section class="details details--night" data-details id="details"></section>
 
-<script src="assets/common.js?v=8"></script>
-<script src="assets/art.js?v=8"></script>
-<script src="assets/sky.js?v=8"></script>
+<script src="assets/common.js?v=9"></script>
+<script src="assets/art.js?v=9"></script>
+<script src="assets/sky.js?v=9"></script>
 <script>
 const w = WEDDING;
 const weddingYear = new Date(w.date).getFullYear();
@@ -282,6 +310,7 @@ const TRACK_VH = 650;   // длина истории в экранах ×100: м
 
 const $ = id => document.getElementById(id);
 const track = $('track'), field = $('field'), ctx = field.getContext('2d');
+const fx = $('fx'), fctx = fx.getContext('2d');   // искры и желания — поверх всей сцены
 const his = $('his'), her = $('her');
 const trackMax = () => track.offsetHeight - innerHeight;
 
@@ -355,8 +384,9 @@ function resize() {
   dpr = Math.min(2, devicePixelRatio || 1);
   W = innerWidth; H = innerHeight;
   U = Math.min(W, H * 0.7) / 100;
-  field.width = W * dpr; field.height = H * dpr;
+  field.width = fx.width = W * dpr; field.height = fx.height = H * dpr;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   track.style.height = TRACK_VH + 'vh';
   for (const el of [his, her]) {
     el.style.width = el.style.height = 32 * U + 'px';
@@ -380,7 +410,7 @@ function meteor(x, y, big) {
   meteors.push({ x, y, vx: Math.cos(a) * v * dir, vy: Math.sin(a) * v, life: 0, max: big ? 1.1 : .8, len: big ? .12 : .08 });
 }
 function drawFx(dt) {
-  ctx.globalCompositeOperation = 'lighter';
+  fctx.globalCompositeOperation = 'lighter';
   for (let i = parts.length - 1; i >= 0; i--) {
     const p = parts[i];
     if ((p.life += dt) > p.max) { parts.splice(i, 1); continue; }
@@ -388,23 +418,23 @@ function drawFx(dt) {
     p.vx *= drag; p.vy = p.vy * drag + 40 * dt;
     p.x += p.vx * dt; p.y += p.vy * dt;
     const a = 1 - p.life / p.max;
-    ctx.fillStyle = `rgba(${p.c},${(a * .9).toFixed(3)})`;
-    ctx.beginPath(); ctx.arc(p.x, p.y, p.r * (0.6 + a * .6), 0, Math.PI * 2); ctx.fill();
+    fctx.fillStyle = `rgba(${p.c},${(a * .9).toFixed(3)})`;
+    fctx.beginPath(); fctx.arc(p.x, p.y, p.r * (0.6 + a * .6), 0, Math.PI * 2); fctx.fill();
   }
   for (let i = meteors.length - 1; i >= 0; i--) {
     const m = meteors[i];
     if ((m.life += dt) > m.max) { meteors.splice(i, 1); continue; }
     m.x += m.vx * dt; m.y += m.vy * dt;
     const a = Math.sin(Math.PI * m.life / m.max);
-    const g = ctx.createLinearGradient(m.x, m.y, m.x - m.vx * m.len, m.y - m.vy * m.len);
+    const g = fctx.createLinearGradient(m.x, m.y, m.x - m.vx * m.len, m.y - m.vy * m.len);
     g.addColorStop(0, `rgba(255,248,230,${a.toFixed(3)})`);
     g.addColorStop(1, 'rgba(255,248,230,0)');
-    ctx.strokeStyle = g; ctx.lineWidth = 2.2;
-    ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(m.x - m.vx * m.len, m.y - m.vy * m.len); ctx.stroke();
-    ctx.fillStyle = `rgba(255,255,255,${a.toFixed(3)})`;
-    ctx.beginPath(); ctx.arc(m.x, m.y, 2.4, 0, Math.PI * 2); ctx.fill();
+    fctx.strokeStyle = g; fctx.lineWidth = 2.2;
+    fctx.beginPath(); fctx.moveTo(m.x, m.y); fctx.lineTo(m.x - m.vx * m.len, m.y - m.vy * m.len); fctx.stroke();
+    fctx.fillStyle = `rgba(255,255,255,${a.toFixed(3)})`;
+    fctx.beginPath(); fctx.arc(m.x, m.y, 2.4, 0, Math.PI * 2); fctx.fill();
   }
-  ctx.globalCompositeOperation = 'source-over';
+  fctx.globalCompositeOperation = 'source-over';
 }
 
 // ---------- Параллакс от мыши и наклона телефона ----------
@@ -523,8 +553,6 @@ function render(p, time, dt) {
     }
   }
 
-  drawFx(dt);
-
   $('flash').style.opacity = (win(p, 0.6, 0.625, 0.625, 0.68) * 0.9).toFixed(3);
   const io = opened ? 1 - ramp(p, 0.03, 0.07) : 0;
   $('intro').style.opacity = io.toFixed(3); reveal($('intro'), io);
@@ -535,6 +563,10 @@ function render(p, time, dt) {
   const cb = win(p, 0.87, 0.94);
   $('chartbox').style.opacity = cb.toFixed(3);
   $('chartbox').style.transform = `translate(-50%,-50%) scale(${(0.9 + 0.1 * cb).toFixed(3)})`;
+  wishBtn.style.visibility = cb > .3 ? 'visible' : 'hidden';
+  fctx.clearRect(0, 0, W, H);
+  updateWish(dt, time, cb);
+  drawFx(dt);
   $('nebula').style.transform = `translate(${-off.x * 14}px,${-off.y * 14}px) scale(${1 + p * 0.25}) rotate(${p * 8}deg)`;
   storyText = no;
   captions.forEach((c, i) => {
@@ -593,15 +625,140 @@ addEventListener('click', e => {
     vibrate(20);
     return;
   }
-  if (cur > 0.9 && scrollY <= trackMax() + 5) {
-    meteor(e.clientX, e.clientY, true);
-    burst(e.clientX, e.clientY, 30, .7);
-    showToast('Желание загадано ✨');
-    vibrate(15);
-  } else {
-    burst(e.clientX, e.clientY, 34, .8);
-  }
+  burst(e.clientX, e.clientY, 34, .8);
 });
+
+// ---------- Желание: держите кнопку — звёзды слетаются, звезда-желание улетает на карту неба ----------
+const WISH_HOLD = 2.2;      // секунд удержания
+const wishBtn = $('wishBtn');
+const streams = [], flights = [];
+let wishes = [];
+try { wishes = JSON.parse(localStorage.getItem('invite-wishes') || '[]'); } catch (e) { /* приватный режим */ }
+let holding = false, holdT = 0, buzzT = 0, labelTimer = 0;
+
+const center = el => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2, r.width]; };
+const chartXY = ([u, v]) => { const [cx, cy, wd] = center($('chart')); const R = wd * 0.425; return [cx + u * R, cy + v * R]; };
+function wishText(label, sub, ms) {
+  clearTimeout(labelTimer);
+  $('wishLabel').textContent = label;
+  $('wishSub').textContent = sub;
+  if (ms) labelTimer = setTimeout(() => wishText(wishes.length ? 'Загадать ещё одно' : 'Загадать желание', 'нажмите и удерживайте'), ms);
+}
+function freeSpot() {
+  for (let i = 0; i < 40; i++) {
+    const a = Math.random() * Math.PI * 2, d = 0.15 + Math.sqrt(Math.random()) * 0.6;
+    const p = [Math.cos(a) * d, Math.sin(a) * d];
+    if (wishes.every(q => Math.hypot(q[0] - p[0], q[1] - p[1]) > .2)) return p;
+  }
+  return [0, 0];
+}
+function stopHold(done) {
+  holding = false;
+  wishBtn.classList.remove('is-holding');
+  wishBtn.style.setProperty('--p', 0);
+  if (!done) wishText('Держите чуть дольше', 'пока звёзды не соберутся', 1800);
+}
+wishBtn.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  if (flights.length) return;
+  try { wishBtn.setPointerCapture(e.pointerId); } catch (err) { /* указатель уже отпущен */ }
+  holding = true; holdT = 0; buzzT = 0;
+  wishBtn.classList.add('is-holding');
+  wishText('Загадывайте…', 'не отпускайте');
+});
+['pointerup', 'pointercancel'].forEach(ev => wishBtn.addEventListener(ev, () => holding && stopHold(false)));
+wishBtn.addEventListener('contextmenu', e => e.preventDefault());
+
+function updateWish(dt, time, cb) {
+  const [bx, by] = center(wishBtn);
+  if (holding) {
+    holdT += dt;
+    wishBtn.style.setProperty('--p', Math.min(1, holdT / WISH_HOLD).toFixed(3));
+    if ((buzzT += dt) > .35) { buzzT = 0; vibrate(8); }
+    for (let i = 0; i < 3; i++) {
+      const a = Math.random() * Math.PI * 2, d = Math.max(W, H) * (.45 + Math.random() * .3);
+      streams.push({ x: bx + Math.cos(a) * d, y: by + Math.sin(a) * d, v: 120 + Math.random() * 160, r: .8 + Math.random() * 1.8 });
+    }
+    if (holdT >= WISH_HOLD) {
+      stopHold(true);
+      flights.push({ from: [bx, by], to: freeSpot(), t: 0 });
+      burst(bx, by, 140, 1.5);
+      vibrate([30, 40, 60]);
+      wishText('Желание летит к звёздам…', '');
+    }
+  }
+
+  fctx.globalCompositeOperation = 'lighter';
+  // звёзды, слетающиеся к кнопке
+  for (let i = streams.length - 1; i >= 0; i--) {
+    const s = streams[i];
+    const dx = bx - s.x, dy = by - s.y, d = Math.hypot(dx, dy);
+    s.v += 900 * dt;
+    if (d < 14 || (!holding && Math.random() < .2)) { streams.splice(i, 1); continue; }
+    const k = Math.min(1, s.v * dt / d);
+    const px = s.x, py = s.y;
+    s.x += dx * k; s.y += dy * k;
+    fctx.strokeStyle = 'rgba(255,236,190,.55)'; fctx.lineWidth = s.r;
+    fctx.beginPath(); fctx.moveTo(px, py); fctx.lineTo(s.x, s.y); fctx.stroke();
+    fctx.fillStyle = 'rgba(255,250,235,.95)';
+    fctx.beginPath(); fctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); fctx.fill();
+  }
+
+  // летящая звезда-желание: дугой от кнопки к месту на карте неба
+  for (let i = flights.length - 1; i >= 0; i--) {
+    const f = flights[i];
+    f.t = Math.min(1, f.t + dt / 1.4);
+    const [x0, y0] = f.from, [x1, y1] = chartXY(f.to);
+    const cx = (x0 + x1) / 2 + (x1 > x0 ? 60 : -60), cy = Math.min(y0, y1) - H * .18;
+    const t = ease(f.t), u = 1 - t;
+    const x = u * u * x0 + 2 * u * t * cx + t * t * x1, y = u * u * y0 + 2 * u * t * cy + t * t * y1;
+    for (let j = 0; j < 3; j++) parts.push({ x, y, vx: (Math.random() - .5) * 60, vy: (Math.random() - .5) * 60, life: 0, max: .6 + Math.random() * .6, r: .8 + Math.random() * 1.8, c: '255,232,180' });
+    starGlow(x, y, 16, 1);
+    if (f.t >= 1) {
+      flights.splice(i, 1);
+      wishes.push(f.to);
+      try { localStorage.setItem('invite-wishes', JSON.stringify(wishes)); } catch (e) { /* не страшно */ }
+      burst(x1, y1, 110, 1.2);
+      vibrate([20, 30, 20]);
+      $('wishDone').classList.add('is-on');
+      wishText('Загадать ещё одно', 'нажмите и удерживайте');
+    }
+  }
+
+  // загаданные желания горят на карте
+  if (cb > .05) {
+    wishes.forEach((q, i) => {
+      const [x, y] = chartXY(q);
+      starGlow(x, y, 9 + Math.sin(time * .004 + i) * 2.5, cb);
+      if (i === wishes.length - 1) {
+        fctx.globalCompositeOperation = 'source-over';
+        fctx.fillStyle = `rgba(255,236,190,${(.9 * cb).toFixed(3)})`;
+        fctx.font = `italic ${Math.max(15, Math.round(U * 4))}px "Cormorant Garamond", serif`;
+        fctx.textAlign = 'center';
+        fctx.fillText('ваше желание', x, y - 18);
+        fctx.globalCompositeOperation = 'lighter';
+      }
+    });
+  }
+  fctx.globalCompositeOperation = 'source-over';
+}
+
+// Звезда с сиянием и четырьмя лучами
+function starGlow(x, y, r, a) {
+  const g = fctx.createRadialGradient(x, y, 0, x, y, r * 2.6);
+  g.addColorStop(0, `rgba(255,248,225,${a.toFixed(3)})`);
+  g.addColorStop(.25, `rgba(255,220,150,${(a * .6).toFixed(3)})`);
+  g.addColorStop(1, 'rgba(255,220,150,0)');
+  fctx.fillStyle = g;
+  fctx.beginPath(); fctx.arc(x, y, r * 2.6, 0, Math.PI * 2); fctx.fill();
+  fctx.strokeStyle = `rgba(255,248,225,${(a * .8).toFixed(3)})`;
+  fctx.lineWidth = 1.2;
+  fctx.beginPath();
+  fctx.moveTo(x - r * 2.2, y); fctx.lineTo(x + r * 2.2, y);
+  fctx.moveTo(x, y - r * 2.2); fctx.lineTo(x, y + r * 2.2);
+  fctx.stroke();
+}
+if (wishes.length) wishText('Загадать ещё одно', 'нажмите и удерживайте');
 
 // Стартовая печать
 function openGate() {
@@ -650,7 +807,7 @@ function loop(now) {
     if (autoY >= trackMax()) setAuto(false);
   }
   cur += (target - cur) * (1 - Math.pow(0.0015, dt));
-  if (now > nextMeteor) {
+  if (now > nextMeteor && scrollY < trackMax()) {
     meteor(Math.random() * W, Math.random() * H * 0.35, false);
     nextMeteor = now + 3500 + Math.random() * 6000;
   }

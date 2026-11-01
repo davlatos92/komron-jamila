@@ -11,12 +11,6 @@ const WEDDING = {
   venue: '«Дидор»',
   address: 'г. Душанбе',
   mapUrl: 'https://yandex.tj/maps/-/CXfL6EI0',
-  program: [
-    ['17:50', 'Сбор гостей'],
-    ['18:30', 'Торжественная часть'],
-    ['19:30', 'Праздничный ужин'],
-    ['22:00', 'Свадебный торт'],
-  ],
   // Ссылка веб-приложения Google Apps Script (см. apps-script/Code.gs) — сюда приходят ответы гостей
   api: '',
   // Небо для карты звёзд (концепция B) — в момент начала праздника
@@ -47,6 +41,8 @@ function initials() {
 }
 
 function vibrate(p) {
+  // до первого касания браузер всё равно запрещает вибрацию и пишет ошибку в консоль
+  if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
   try { navigator.vibrate && navigator.vibrate(p); } catch (e) { /* не везде есть */ }
 }
 
@@ -176,13 +172,6 @@ function renderDetails(root) {
           <a class="btn btn--solid" href="${w.mapUrl}" target="_blank" rel="noopener">Как добраться</a>
           <button class="btn" data-calendar>В календарь</button>
         </div>
-      </div>
-
-      <div class="details__card" data-reveal>
-        <p class="details__label">Программа</p>
-        <ul class="program">
-          ${w.program.map(([t, s]) => `<li><time>${t}</time><span>${s}</span></li>`).join('')}
-        </ul>
       </div>
 
       <div class="details__card rsvp" data-rsvp data-reveal ${API_URL ? '' : 'hidden'}>
