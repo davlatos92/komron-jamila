@@ -8,7 +8,7 @@
 <meta name="description" content="9 ноября 2026 · 18:00 · «Дидор», Душанбе">
 <meta property="og:title" content="Комрон & Джамиля приглашают вас на свадьбу">
 <meta property="og:description" content="9 ноября 2026 · 18:00 · «Дидор», Душанбе">
-<link rel="stylesheet" href="assets/common.css?v=7">
+<link rel="stylesheet" href="assets/common.css?v=8">
 <style>
   html.locked, html.locked body { overflow: hidden; }
   body { background: #070a18; }
@@ -167,7 +167,9 @@
   .hint__auto {
     font: italic 18px var(--serif); color: #d6b780; background: rgba(5, 7, 15, .55);
     border: 1px solid rgba(214, 183, 128, .55); border-radius: 999px; padding: 8px 18px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px; touch-action: manipulation;
   }
+  .hint__auto svg { width: 14px; height: 14px; fill: currentColor; flex: none; }
 
   /* ---------- Кнопка автопросмотра ---------- */
   .autoplay {
@@ -255,7 +257,7 @@
 <div class="hint" id="hint">
   <div class="hint__icon"><span class="hint__dot"></span></div>
   <div class="hint__text" id="hintText"></div>
-  <button class="hint__auto" id="hintAuto">▶ или смотреть автоматически</button>
+  <button class="hint__auto" id="hintAuto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>или смотреть автоматически</button>
 </div>
 <button class="autoplay" id="autoBtn" aria-label="Автопросмотр">
   <svg class="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg>
@@ -265,9 +267,9 @@
 <div class="track" id="track"></div>
 <section class="details details--night" data-details id="details"></section>
 
-<script src="assets/common.js?v=7"></script>
-<script src="assets/art.js?v=7"></script>
-<script src="assets/sky.js?v=7"></script>
+<script src="assets/common.js?v=8"></script>
+<script src="assets/art.js?v=8"></script>
+<script src="assets/sky.js?v=8"></script>
 <script>
 const w = WEDDING;
 const weddingYear = new Date(w.date).getFullYear();
@@ -555,9 +557,12 @@ function setAuto(on) {
   lastActive = performance.now();
 }
 ['wheel', 'touchstart', 'keydown'].forEach(ev => addEventListener(ev, e => {
+  // касание самих кнопок автопросмотра — не «начал листать»: иначе на телефоне
+  // подсказка с кнопкой пряталась на touchstart, и нажатие уходило в пустоту
+  if (e.target.closest?.('.autoplay, .hint__auto')) return;
   lastActive = performance.now();
   hintNow = false;
-  if (auto && !e.target.closest?.('.autoplay, .hint__auto')) setAuto(false);
+  if (auto) setAuto(false);
 }, { passive: true }));
 $('autoBtn').addEventListener('click', () => setAuto(!auto));
 $('hintAuto').addEventListener('click', () => setAuto(true));
