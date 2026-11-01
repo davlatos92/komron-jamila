@@ -2,15 +2,16 @@
 //
 // Установка (один раз):
 // 1. Создайте Google Таблицу → Расширения → Apps Script, вставьте этот файл целиком.
-// 2. Поменяйте ADMIN_LOGIN и ADMIN_PASSWORD ниже — с ними входят в admin.html.
-// 3. Начать развёртывание → Новое развёртывание → тип «Веб-приложение»,
+// 2. Начать развёртывание → Новое развёртывание → тип «Веб-приложение»,
 //    «Запуск от имени»: Я, «У кого есть доступ»: Все → Развернуть, разрешить доступ.
-// 4. Скопируйте ссылку вида https://script.google.com/macros/s/…/exec
+// 3. Скопируйте ссылку вида https://script.google.com/macros/s/…/exec
 //    и вставьте её в WEDDING.api в assets/common.js.
+// 4. Откройте admin.html: при первом входе придумайте логин и пароль.
+//    В свойствах скрипта хранится только хеш пароля. Сбросить: Настройки проекта →
+//    Свойства скрипта → удалить ADMIN_LOGIN и ADMIN_HASH.
 // После правки этого кода: Управление развёртываниями → карандаш → Версия «Новая».
 
-const ADMIN_LOGIN = 'admin';
-const ADMIN_PASSWORD = 'ЗАМЕНИТЕ_НА_СВОЙ_ПАРОЛЬ';
+const props = PropertiesService.getScriptProperties();
 const SHEET = 'Гости';
 const HEAD = ['id', 'Имя', 'Ответ', 'Человек', 'Ответил', 'Создан', 'Ссылка'];
 
@@ -49,14 +50,31 @@ function newId_(taken) {
   return id;
 }
 
+const hash_ = s => Utilities.base64Encode(
+  Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, 'invite:' + s, Utilities.Charset.UTF_8));
+
+function isAdmin_(p) {
+  const h = props.getProperty('ADMIN_HASH');
+  return !!h && p.login === props.getProperty('ADMIN_LOGIN') && hash_(p.key || '') === h;
+}
+
 function out_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
 function doGet(e) {
   const p = e.parameter || {};
+  // Первый вход в админку: задаём логин и пароль (только пока они не заданы)
+  if (p.action === 'status') return out_({ ok: true, configured: !!props.getProperty('ADMIN_HASH') });
+  if (p.action === 'setup') {
+    if (props.getProperty('ADMIN_HASH')) return out_({ ok: false, error: 'configured' });
+    const login = String(p.login || '').trim(), key = String(p.key || '');
+    if (login.length < 3 || key.length < 6) return out_({ ok: false, error: 'weak' });
+    props.setProperties({ ADMIN_LOGIN: login, ADMIN_HASH: hash_(key) });
+    return out_({ ok: true });
+  }
   const admin = ['list', 'add', 'remove'].includes(p.action);
-  if (admin && (p.login !== ADMIN_LOGIN || p.key !== ADMIN_PASSWORD)) return out_({ ok: false, error: 'key' });
+  if (admin && !isAdmin_(p)) return out_({ ok: false, error: 'key' });
 
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);

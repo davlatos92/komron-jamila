@@ -63,6 +63,18 @@
     <p style="margin:0;font-size:19px">Админка заработает, как только к сайту подключат Google Таблицу (скрипт <b>apps-script/Code.gs</b>, ссылка — в <b>WEDDING.api</b>).</p>
   </section>
 
+  <section class="card" id="firstRun" hidden>
+    <p class="label">Первый вход</p>
+    <p style="margin:0 0 12px;font-size:19px">Придумайте логин и пароль для админки. Посмотреть пароль потом будет нельзя — запомните его.</p>
+    <form class="login" id="setupForm">
+      <input class="field" id="setupLogin" placeholder="Логин (от 3 символов)" autocomplete="username" autocapitalize="off">
+      <input class="field" id="setupKey" type="password" placeholder="Пароль (от 6 символов)" autocomplete="new-password">
+      <input class="field" id="setupKey2" type="password" placeholder="Пароль ещё раз" autocomplete="new-password">
+      <button class="btn btn--solid">Сохранить и войти</button>
+    </form>
+    <p class="err" id="setupErr"></p>
+  </section>
+
   <section class="card" id="login" hidden>
     <p class="label">Вход</p>
     <form class="login" id="loginForm">
@@ -137,7 +149,7 @@ const when = d => d ? new Date(d).toLocaleString('ru-RU', { day: 'numeric', mont
 const inviteText = g => `${g.name}, ${w.groom} и ${w.bride} приглашают вас на свою свадьбу ${w.dateText}! Ваше приглашение:`;
 
 function show(view) {
-  for (const id of ['setup', 'login', 'app']) $(id).hidden = id !== view;
+  for (const id of ['setup', 'firstRun', 'login', 'app']) $(id).hidden = id !== view;
 }
 
 async function load() {
@@ -264,8 +276,29 @@ $('loginForm').addEventListener('submit', async e => {
   }
 });
 
+$('setupForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const l = $('setupLogin').value.trim(), k = $('setupKey').value;
+  $('setupErr').textContent = '';
+  if (l.length < 3 || k.length < 6) { $('setupErr').textContent = 'Логин от 3 символов, пароль от 6'; return; }
+  if (k !== $('setupKey2').value) { $('setupErr').textContent = 'Пароли не совпадают'; return; }
+  try {
+    const r = await api({ action: 'setup', login: l, key: k });
+    if (!r.ok) throw new Error(r.error);
+    login = l; key = k;
+    store.set({ login, key });
+    await load();
+    show('app');
+  } catch (err) {
+    $('setupErr').textContent = err.message === 'configured' ? 'Логин и пароль уже заданы — войдите' : 'Нет связи с таблицей';
+    if (err.message === 'configured') show('login');
+  }
+});
+
 (async () => {
   if (!API_URL) return show('setup');
+  const st = await api({ action: 'status' }).catch(() => null);
+  if (st && !st.configured) return show('firstRun');
   ({ login = '', key = '' } = store.get());
   if (!key) return show('login');
   try { await load(); show('app'); } catch (e) { show('login'); }
