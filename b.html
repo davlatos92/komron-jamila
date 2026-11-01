@@ -8,7 +8,7 @@
 <meta name="description" content="9 ноября 2026 · 18:00 · «Дидор», Душанбе">
 <meta property="og:title" content="Комрон & Джамиля приглашают вас на свадьбу">
 <meta property="og:description" content="9 ноября 2026 · 18:00 · «Дидор», Душанбе">
-<link rel="stylesheet" href="assets/common.css?v=6">
+<link rel="stylesheet" href="assets/common.css?v=7">
 <style>
   html.locked, html.locked body { overflow: hidden; }
   body { background: #070a18; }
@@ -108,6 +108,33 @@
   @keyframes ring { from { transform: scale(1); opacity: .9; } to { transform: scale(1.7); opacity: 0; } }
   @keyframes sealBob { 50% { transform: translateY(-6px) rotate(-3deg); } }
   .seal:active { transform: scale(.94); }
+
+  /* Палец-подсказка: появляется, если печать долго не нажимают */
+  .seal-wrap { position: relative; display: grid; place-items: center; }
+  .tap-finger {
+    position: absolute; left: 50%; top: 50%; width: clamp(58px, 16vw, 72px); height: auto;
+    fill: rgba(251, 239, 216, .95); stroke: #4a3520; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round;
+    filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .5));
+    opacity: 0; pointer-events: none; transform-origin: 38% 12%;
+    transition: opacity .5s;
+  }
+  .tap-ripple {
+    position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px;
+    border-radius: 50%; border: 3px solid #fbefd8; opacity: 0; pointer-events: none;
+  }
+  .gate.idle .tap-finger { opacity: 1; animation: tapFinger 1.7s ease-in-out infinite; }
+  .gate.idle .tap-ripple { animation: tapRipple 1.7s ease-out infinite; }
+  @keyframes tapFinger {
+    0%, 100% { transform: translate(-30%, 34%) rotate(-18deg) scale(1); }
+    40% { transform: translate(-38%, -4%) rotate(-18deg) scale(1); }
+    50% { transform: translate(-38%, -4%) rotate(-18deg) scale(.86); }
+    62% { transform: translate(-38%, -4%) rotate(-18deg) scale(1); }
+  }
+  @keyframes tapRipple {
+    0%, 48% { transform: scale(.4); opacity: 0; }
+    52% { transform: scale(.5); opacity: .9; }
+    100% { transform: scale(3); opacity: 0; }
+  }
   @media (max-width: 560px) { .gate__names span { display: block; font-size: .6em; line-height: 1.2; } }
 
   /* ---------- Подсказка «листайте» ---------- */
@@ -207,10 +234,19 @@
 <div class="gate" id="gate">
   <p class="gate__kicker">Приглашение на свадьбу</p>
   <p class="gate__for" id="gateFor"><small>персонально для</small><b id="gateGuest"></b></p>
-  <button class="seal" id="seal" aria-label="Открыть приглашение">
-    <span class="seal__ring"></span><span class="seal__ring seal__ring--2"></span>
-    <span class="seal__face" id="sealFace"></span>
-  </button>
+  <div class="seal-wrap">
+    <button class="seal" id="seal" aria-label="Открыть приглашение">
+      <span class="seal__ring"></span><span class="seal__ring seal__ring--2"></span>
+      <span class="seal__face" id="sealFace"></span>
+    </button>
+    <span class="tap-ripple"></span>
+    <svg class="tap-finger" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M8 13v-8.5a1.5 1.5 0 0 1 3 0v7.5"/>
+      <path d="M11 11.5v-2a1.5 1.5 0 1 1 3 0v2.5"/>
+      <path d="M14 10.5a1.5 1.5 0 0 1 3 0v1.5"/>
+      <path d="M17 11.5a1.5 1.5 0 0 1 3 0v4.5a6 6 0 0 1 -6 6h-2h.208a6 6 0 0 1 -5.012 -2.7l-.196 -.3c-.312 -.479 -1.407 -2.388 -3.286 -5.728a1.5 1.5 0 0 1 .536 -2.022a1.867 1.867 0 0 1 2.28 .28l1.47 1.47"/>
+    </svg>
+  </div>
   <h2 class="gate__names" id="gateNames"></h2>
   <p class="gate__date" id="gateDate"></p>
   <p class="gate__tap">Нажмите на печать, чтобы открыть</p>
@@ -229,9 +265,9 @@
 <div class="track" id="track"></div>
 <section class="details details--night" data-details id="details"></section>
 
-<script src="assets/common.js?v=6"></script>
-<script src="assets/art.js?v=6"></script>
-<script src="assets/sky.js?v=6"></script>
+<script src="assets/common.js?v=7"></script>
+<script src="assets/art.js?v=7"></script>
+<script src="assets/sky.js?v=7"></script>
 <script>
 const w = WEDDING;
 const weddingYear = new Date(w.date).getFullYear();
@@ -575,6 +611,7 @@ function openGate() {
   } else {
     addEventListener('deviceorientation', onTilt);
   }
+  $('gate').classList.remove('idle');
   $('gate').classList.add('is-open');
   document.documentElement.classList.remove('locked');
   setTimeout(() => $('gate').remove(), 1300);
@@ -591,6 +628,8 @@ function openGate() {
   }, 700);
 }
 $('seal').addEventListener('click', openGate);
+// Через 2,5 с без нажатия показываем палец, который «стучит» по печати
+setTimeout(() => { if (!opened && $('gate')) $('gate').classList.add('idle'); }, 2500);
 // Пока печать закрыта, страница не скроллится (на iPhone overflow:hidden не всегда хватает)
 addEventListener('touchmove', e => { if (!opened) e.preventDefault(); }, { passive: false });
 
