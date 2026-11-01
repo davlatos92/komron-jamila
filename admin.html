@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#070a18">
 <title>Гости — админка приглашения</title>
-<link rel="stylesheet" href="assets/common.css?v=6">
+<link rel="stylesheet" href="assets/common.css?v=10">
 <style>
   body { background: linear-gradient(#070a18, #121a3a) fixed; color: #f3e9d6; min-height: 100vh; }
   main { max-width: 720px; margin: 0 auto; padding: 20px 16px 80px; }
@@ -26,6 +26,9 @@
   .label { margin: 0 0 10px; font-size: 14px; letter-spacing: .2em; text-transform: uppercase; color: #d6b780; }
   .err { color: #e8a0a8; margin: 10px 0 0; font-size: 18px; }
   .err:empty { display: none; }
+  .login { display: grid; gap: 10px; }
+  .created { margin-top: 14px; padding-top: 14px; border-top: 1px dashed rgba(214, 183, 128, .4); }
+  .created p { margin: 0 0 8px; font-size: 19px; }
 
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
   .stat { text-align: center; padding: 12px 6px; border-radius: 12px; background: rgba(255, 255, 255, .05); border: 1px solid rgba(214, 183, 128, .25); }
@@ -56,13 +59,14 @@
   <p class="sub">Гости и их ответы</p>
 
   <section class="card" id="setup" hidden>
-    <p class="label">Ответы ещё не подключены</p>
-    <p style="margin:0;font-size:19px">Создайте Google Таблицу со скриптом из <b>apps-script/Code.gs</b> и вставьте ссылку веб-приложения в <b>WEDDING.api</b> в <b>assets/common.js</b>.</p>
+    <p class="label">Хранилище ответов ещё не подключено</p>
+    <p style="margin:0;font-size:19px">Админка заработает, как только к сайту подключат Google Таблицу (скрипт <b>apps-script/Code.gs</b>, ссылка — в <b>WEDDING.api</b>).</p>
   </section>
 
   <section class="card" id="login" hidden>
     <p class="label">Вход</p>
-    <form class="row" id="loginForm">
+    <form class="login" id="loginForm">
+      <input class="field" id="loginName" placeholder="Логин" autocomplete="username" autocapitalize="off">
       <input class="field" id="key" type="password" placeholder="Пароль" autocomplete="current-password">
       <button class="btn btn--solid">Войти</button>
     </form>
@@ -89,6 +93,15 @@
         <button class="btn btn--solid">Создать ссылку</button>
       </form>
       <p class="err" id="addErr"></p>
+      <div class="created" id="created" hidden>
+        <p>Ссылка для <b id="createdName"></b> готова и скопирована:</p>
+        <input class="guest__link" id="createdLink" readonly>
+        <div class="row">
+          <button class="btn btn--sm btn--solid" data-share="copy">Копировать</button>
+          <button class="btn btn--sm" data-share="wa">WhatsApp</button>
+          <button class="btn btn--sm" data-share="tg">Telegram</button>
+        </div>
+      </div>
     </section>
 
     <input class="field" id="search" placeholder="Поиск по имени" style="margin-bottom:10px">
@@ -102,19 +115,21 @@
   </div>
 </main>
 
-<script src="assets/common.js?v=6"></script>
+<script src="assets/common.js?v=10"></script>
 <script>
 const w = WEDDING;
 const $ = id => document.getElementById(id);
-const KEY_STORE = 'invite-admin-key';
-let key = '', guests = [], filter = 'all', freshId = '';
+const KEY_STORE = 'invite-admin';
+let login = '', key = '', guests = [], filter = 'all', freshId = '';
 
 $('title').innerHTML = `${w.groom} <span>&</span> ${w.bride}`;
 
+// Логин и пароль запоминаются на этом устройстве, чтобы не вводить каждый раз
 const store = {
-  get() { try { return localStorage.getItem(KEY_STORE) || ''; } catch (e) { return ''; } },
-  set(v) { try { v ? localStorage.setItem(KEY_STORE, v) : localStorage.removeItem(KEY_STORE); } catch (e) { /* приватный режим */ } },
+  get() { try { return JSON.parse(localStorage.getItem(KEY_STORE)) || {}; } catch (e) { return {}; } },
+  set(v) { try { v ? localStorage.setItem(KEY_STORE, JSON.stringify(v)) : localStorage.removeItem(KEY_STORE); } catch (e) { /* приватный режим */ } },
 };
+const adminApi = params => api({ ...params, login, key });
 
 const linkFor = id => location.href.replace(/admin\.html.*$/, '') + '?g=' + id;
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -126,7 +141,7 @@ function show(view) {
 }
 
 async function load() {
-  const r = await api({ action: 'list', key });
+  const r = await adminApi({ action: 'list' });
   if (!r.ok) throw new Error(r.error || 'list');
   guests = r.guests.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
   render();
@@ -166,6 +181,18 @@ function render() {
   }).join('') : '<p class="empty">Здесь пока никого нет</p>';
 }
 
+function share(g, how) {
+  const link = linkFor(g.id);
+  if (how === 'copy') copy(link);
+  if (how === 'wa') window.open('https://wa.me/?text=' + encodeURIComponent(inviteText(g) + ' ' + link), '_blank', 'noopener');
+  if (how === 'tg') window.open('https://t.me/share/url?' + new URLSearchParams({ url: link, text: inviteText(g) }), '_blank', 'noopener');
+}
+$('created').addEventListener('click', e => {
+  const b = e.target.closest('[data-share]');
+  const g = guests.find(x => x.id === freshId);
+  if (b && g) share(g, b.dataset.share);
+});
+
 async function copy(text) {
   try { await navigator.clipboard.writeText(text); showToast('Ссылка скопирована'); }
   catch (e) { showToast('Не получилось скопировать — выделите ссылку вручную'); }
@@ -176,17 +203,12 @@ $('list').addEventListener('click', async e => {
   if (!b) return;
   const card = b.closest('.guest');
   const g = guests.find(x => x.id === card.dataset.id);
-  const link = linkFor(g.id);
-  if (b.dataset.act === 'copy') copy(link);
-  if (b.dataset.act === 'wa') window.open('https://wa.me/?text=' + encodeURIComponent(inviteText(g) + ' ' + link), '_blank', 'noopener');
-  if (b.dataset.act === 'tg') window.open('https://t.me/share/url?' + new URLSearchParams({ url: link, text: inviteText(g) }), '_blank', 'noopener');
-  if (b.dataset.act === 'del') {
-    if (!confirm(`Удалить «${g.name}»? Ссылка перестанет работать.`)) return;
-    b.disabled = true;
-    const r = await api({ action: 'remove', id: g.id, key }).catch(() => ({}));
-    if (r.ok) { guests = guests.filter(x => x !== g); render(); showToast('Удалено'); }
-    else { b.disabled = false; showToast('Не получилось удалить'); }
-  }
+  if (b.dataset.act !== 'del') return share(g, b.dataset.act);
+  if (!confirm(`Удалить «${g.name}»? Ссылка перестанет работать.`)) return;
+  b.disabled = true;
+  const r = await adminApi({ action: 'remove', id: g.id }).catch(() => ({}));
+  if (r.ok) { guests = guests.filter(x => x !== g); render(); showToast('Удалено'); }
+  else { b.disabled = false; showToast('Не получилось удалить'); }
 });
 $('list').addEventListener('focusin', e => e.target.classList.contains('guest__link') && e.target.select());
 
@@ -198,7 +220,7 @@ $('addForm').addEventListener('submit', async e => {
   const btn = e.submitter || $('addForm').querySelector('button');
   btn.disabled = true;
   try {
-    const r = await api({ action: 'add', name, key });
+    const r = await adminApi({ action: 'add', name });
     if (!r.ok) throw new Error(r.error);
     guests.unshift(r.guest);
     freshId = r.guest.id;
@@ -206,6 +228,9 @@ $('addForm').addEventListener('submit', async e => {
     filter = 'all';
     document.querySelectorAll('[data-f]').forEach(x => x.classList.toggle('is-active', x.dataset.f === 'all'));
     render();
+    $('createdName').textContent = r.guest.name;
+    $('createdLink').value = linkFor(r.guest.id);
+    $('created').hidden = false;
     copy(linkFor(r.guest.id));
   } catch (err) {
     $('addErr').textContent = 'Не получилось создать. Проверьте интернет.';
@@ -222,24 +247,26 @@ $('filters').addEventListener('click', e => {
 });
 $('search').addEventListener('input', render);
 $('refresh').addEventListener('click', () => load().then(() => showToast('Обновлено')).catch(() => showToast('Не получилось обновить')));
-$('logout').addEventListener('click', () => { store.set(''); key = ''; show('login'); });
+$('logout').addEventListener('click', () => { store.set(null); login = key = ''; show('login'); });
+$('created').addEventListener('focusin', e => e.target.select?.());
 
 $('loginForm').addEventListener('submit', async e => {
   e.preventDefault();
+  login = $('loginName').value.trim();
   key = $('key').value.trim();
   $('loginErr').textContent = '';
   try {
     await load();
-    store.set(key);
+    store.set({ login, key });
     show('app');
   } catch (err) {
-    $('loginErr').textContent = err.message === 'key' ? 'Неверный пароль' : 'Нет связи с таблицей';
+    $('loginErr').textContent = err.message === 'key' ? 'Неверный логин или пароль' : 'Нет связи с таблицей';
   }
 });
 
 (async () => {
   if (!API_URL) return show('setup');
-  key = store.get();
+  ({ login = '', key = '' } = store.get());
   if (!key) return show('login');
   try { await load(); show('app'); } catch (e) { show('login'); }
 })();

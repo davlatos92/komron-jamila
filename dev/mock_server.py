@@ -1,7 +1,7 @@
 """Локальная заглушка бэкенда (apps-script/Code.gs) для проверки сайта без Google.
 
 Запуск из корня репозитория:  python dev/mock_server.py 8772
-Сайт: http://localhost:8772, API: /api (пароль админа — 1234). Данные живут в памяти.
+Сайт: http://localhost:8772, API: /api (вход в админку: admin / 1234). Данные живут в памяти.
 """
 import json
 import random
@@ -12,7 +12,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
-ADMIN_KEY = '1234'
+ADMIN_LOGIN, ADMIN_KEY = 'admin', '1234'
 guests = []
 
 
@@ -31,7 +31,7 @@ def new_id():
 
 def handle(p):
     action = p.get('action', '')
-    if action in ('list', 'add', 'remove') and p.get('key') != ADMIN_KEY:
+    if action in ('list', 'add', 'remove') and (p.get('login') != ADMIN_LOGIN or p.get('key') != ADMIN_KEY):
         return {'ok': False, 'error': 'key'}
     find = lambda: next((g for g in guests if g['id'] == p.get('id')), None)
     if action == 'guest':

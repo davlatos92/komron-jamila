@@ -2,14 +2,15 @@
 //
 // Установка (один раз):
 // 1. Создайте Google Таблицу → Расширения → Apps Script, вставьте этот файл целиком.
-// 2. Поменяйте ADMIN_KEY ниже на свой пароль (им входят в admin.html).
+// 2. Поменяйте ADMIN_LOGIN и ADMIN_PASSWORD ниже — с ними входят в admin.html.
 // 3. Начать развёртывание → Новое развёртывание → тип «Веб-приложение»,
 //    «Запуск от имени»: Я, «У кого есть доступ»: Все → Развернуть, разрешить доступ.
 // 4. Скопируйте ссылку вида https://script.google.com/macros/s/…/exec
 //    и вставьте её в WEDDING.api в assets/common.js.
 // После правки этого кода: Управление развёртываниями → карандаш → Версия «Новая».
 
-const ADMIN_KEY = 'ЗАМЕНИТЕ_НА_СВОЙ_ПАРОЛЬ';
+const ADMIN_LOGIN = 'admin';
+const ADMIN_PASSWORD = 'ЗАМЕНИТЕ_НА_СВОЙ_ПАРОЛЬ';
 const SHEET = 'Гости';
 const HEAD = ['id', 'Имя', 'Ответ', 'Человек', 'Ответил', 'Создан', 'Ссылка'];
 
@@ -55,7 +56,7 @@ function out_(obj) {
 function doGet(e) {
   const p = e.parameter || {};
   const admin = ['list', 'add', 'remove'].includes(p.action);
-  if (admin && p.key !== ADMIN_KEY) return out_({ ok: false, error: 'key' });
+  if (admin && (p.login !== ADMIN_LOGIN || p.key !== ADMIN_PASSWORD)) return out_({ ok: false, error: 'key' });
 
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
