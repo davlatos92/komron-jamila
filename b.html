@@ -1,11 +1,17 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" class="locked">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Две звезды — приглашение</title>
-<link rel="stylesheet" href="assets/common.css?v=3">
+<meta name="theme-color" content="#070a18">
+<title>Комрон & Джамиля — приглашение на свадьбу</title>
+<meta name="description" content="9 ноября 2026 · 18:00 · «Дидор», Душанбе">
+<meta property="og:title" content="Комрон & Джамиля приглашают вас на свадьбу">
+<meta property="og:description" content="9 ноября 2026 · 18:00 · «Дидор», Душанбе">
+<link rel="stylesheet" href="assets/common.css?v=5">
 <style>
+  html.locked, html.locked body { overflow: hidden; }
+  body { background: #070a18; }
   .stage { background: radial-gradient(ellipse at 50% 40%, #1a2350 0%, #0b1029 55%, #05070f 100%); }
   .nebula {
     position: absolute; inset: -20%;
@@ -15,39 +21,161 @@
       radial-gradient(ellipse 30% 20% at 55% 20%, rgba(220, 140, 120, .12), transparent 70%);
   }
   canvas.field { position: absolute; inset: 0; width: 100%; height: 100%; }
-  .pstar { position: absolute; left: 50%; top: 50%; will-change: transform, opacity; }
+  .pstar { position: absolute; left: 50%; top: 50%; will-change: transform, opacity; cursor: pointer; }
   .pstar__glow {
     position: absolute; inset: -60%; border-radius: 50%;
     background: radial-gradient(circle, rgba(255, 228, 170, .55), rgba(255, 228, 170, 0) 65%);
+    animation: breathe 3.2s ease-in-out infinite;
   }
+  #her .pstar__glow { animation-delay: -1.6s; }
+  @keyframes breathe { 50% { transform: scale(1.18); opacity: .7; } }
   .pstar__photo {
     position: absolute; inset: 0; border-radius: 50%; overflow: hidden;
     box-shadow: 0 0 0 .5vmin #d6b780, 0 0 4vmin rgba(255, 220, 160, .6);
   }
+  .pstar.pop .pstar__photo { animation: pop .7s cubic-bezier(.2, .9, .3, 1.4); }
+  @keyframes pop { 30% { transform: scale(1.18); } 100% { transform: none; } }
   .pstar__photo svg { display: block; width: 100%; height: 100%; }
   .pstar__label {
-    position: absolute; left: 50%; top: 104%; transform: translateX(-50%); white-space: nowrap;
-    font-family: var(--script); color: #f3dcae;
+    position: absolute; left: 50%; top: 106%; transform: translateX(-50%); white-space: nowrap;
+    font-family: var(--script); color: #f3dcae; text-shadow: 0 2px 10px rgba(0, 0, 0, .6);
   }
+
   .overlay { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; color: #f5ead6; pointer-events: none; }
-  .intro { width: min(88vw, 560px); font-style: italic; font-size: clamp(24px, 5.6vw, 38px); line-height: 1.3; top: 38%; }
-  .intro small { display: block; margin-top: 4vh; font-style: normal; font-size: 13px; letter-spacing: .25em; text-transform: uppercase; opacity: .7; }
-  .yearbox { top: 8vh; transform: translateX(-50%); }
-  .yearbox b { display: block; font-weight: 400; font-size: clamp(44px, 11vw, 80px); letter-spacing: .08em; line-height: 1; }
-  .yearbox span { font-size: 12px; letter-spacing: .3em; text-transform: uppercase; opacity: .6; }
-  .names { top: 71%; width: min(92vw, 620px); }
-  .names h1 { font-family: var(--script); font-weight: 400; font-size: clamp(44px, 11vw, 76px); margin: 0; line-height: 1.05; color: #fbefd8; }
+  .intro { width: min(90vw, 600px); font-style: italic; font-size: clamp(32px, 8.4vw, 50px); line-height: 1.25; top: 36%; text-shadow: 0 2px 24px rgba(0, 0, 0, .5); }
+  .yearbox { top: 7vh; transform: translateX(-50%); }
+  .yearbox b { display: block; font-weight: 400; font-size: clamp(56px, 15vw, 96px); letter-spacing: .08em; line-height: 1; }
+  .yearbox span { font-size: 15px; letter-spacing: .3em; text-transform: uppercase; opacity: .7; }
+  .names { top: auto; bottom: max(6vh, 28px); transform: translateX(-50%); width: min(94vw, 680px); }
+  .names h1 { font-family: var(--script); font-weight: 400; font-size: clamp(56px, 15vw, 92px); margin: 0; line-height: 1.05; color: #fbefd8; animation: glow 3s ease-in-out infinite; }
   .names h1 span { color: #d6b780; }
-  .names p { margin: 1vh 0 0; font-style: italic; font-size: clamp(19px, 4.4vw, 26px); }
-  .names .date { font-style: normal; letter-spacing: .25em; margin-top: 1.4vh; }
-  .chartbox { top: 46%; }
-  .chartbox canvas { width: min(80vw, 58vh); height: min(80vw, 58vh); display: block; margin: 0 auto; }
-  .chartbox h3 { font-weight: 400; font-size: clamp(16px, 3.8vw, 20px); letter-spacing: .12em; text-transform: uppercase; margin: 2.2vh 0 .6vh; color: #d6b780; }
-  .chartbox p { margin: 0; font-style: italic; font-size: clamp(18px, 4.2vw, 24px); width: min(88vw, 520px); }
-  .chartbox .hint { margin-top: 2.4vh; font-style: normal; font-size: 13px; letter-spacing: .25em; text-transform: uppercase; opacity: .7; }
+  .br-m { display: none; }
+  @media (max-width: 560px) { .br-m { display: inline; } }
+  @keyframes glow { 50% { text-shadow: 0 0 22px rgba(255, 220, 160, .55); } }
+  .names p { margin: 1.2vh 0 0; font-style: italic; font-size: clamp(24px, 6vw, 32px); }
+  .names .date { font-style: normal; letter-spacing: .18em; margin-top: 1.4vh; font-size: clamp(22px, 5.6vw, 30px); }
+  .chartbox { top: 45%; }
+  .chartbox canvas { width: min(84vw, 56vh); height: min(84vw, 56vh); display: block; margin: 0 auto; }
+  .chartbox h3 { font-weight: 500; font-size: clamp(18px, 4.6vw, 24px); letter-spacing: .08em; text-transform: uppercase; margin: 2vh 0 .8vh; color: #d6b780; }
+  .chartbox p { margin: 0 auto; font-style: italic; font-size: clamp(22px, 5.6vw, 30px); line-height: 1.25; width: min(90vw, 560px); }
+  .chartbox .wish { margin-top: 1.6vh; font-size: clamp(18px, 4.6vw, 22px); color: #f3dcae; animation: glow 2.4s ease-in-out infinite; }
   .flash { position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, #fff6e0, rgba(255, 246, 224, 0) 70%); opacity: 0; pointer-events: none; }
-  .caption { color: #f5ead6; text-shadow: 0 2px 20px rgba(0, 0, 0, .6); }
+  .caption {
+    bottom: 17vh; width: min(92vw, 620px);
+    font-size: clamp(28px, 7.4vw, 44px);
+    color: #f5ead6; text-shadow: 0 2px 20px rgba(0, 0, 0, .7);
+  }
   .grain { mix-blend-mode: screen; opacity: .05; }
+
+  /* Буквы проявляются по одной */
+  .rv .wd { display: inline-block; white-space: nowrap; }
+  .rv .ch {
+    display: inline-block; opacity: 0; transform: translateY(.35em) scale(.85); filter: blur(6px);
+    transition: opacity .6s, transform .7s cubic-bezier(.2, .8, .2, 1), filter .6s;
+    transition-delay: calc(var(--i) * 24ms);
+  }
+  .rv.on .ch { opacity: 1; transform: none; filter: none; }
+
+  /* ---------- Стартовый экран с печатью ---------- */
+  .gate {
+    position: fixed; inset: 0; z-index: 40;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2.2vh;
+    padding: 24px 16px; text-align: center; color: #f5ead6;
+    background: radial-gradient(ellipse at 50% 45%, rgba(26, 35, 80, .35), rgba(5, 7, 15, .75));
+    transition: opacity 1s ease, transform 1.2s ease;
+  }
+  .gate.is-open { opacity: 0; transform: scale(1.15); pointer-events: none; }
+  .gate__kicker { margin: 0; font-size: clamp(15px, 4vw, 18px); letter-spacing: .3em; text-transform: uppercase; color: #d6b780; }
+  .gate__names { margin: 0; font: 400 clamp(52px, 14vw, 86px)/1.05 var(--script); color: #fbefd8; }
+  .gate__names span { color: #d6b780; }
+  .gate__date { margin: 0; font-size: clamp(22px, 5.8vw, 30px); letter-spacing: .12em; }
+  .gate__tap { margin: 1vh 0 0; font-size: clamp(20px, 5.2vw, 26px); font-style: italic; animation: glow 2s ease-in-out infinite; }
+  .seal {
+    position: relative; width: clamp(130px, 38vw, 170px); aspect-ratio: 1; border: 0; padding: 0; cursor: pointer;
+    border-radius: 50%; margin: 1.5vh 0;
+    background: radial-gradient(circle at 35% 30%, #f4dfae, #c9a463 45%, #8a6a3a 100%);
+    box-shadow: 0 10px 40px rgba(214, 183, 128, .45), inset 0 -6px 14px rgba(0, 0, 0, .25), inset 0 6px 12px rgba(255, 255, 255, .35);
+    animation: sealBob 2.6s ease-in-out infinite;
+  }
+  .seal::before { content: ''; position: absolute; inset: 9%; border-radius: 50%; border: 2px dashed rgba(90, 60, 25, .45); }
+  .seal__face { position: relative; font: 400 clamp(40px, 11vw, 54px) var(--script); color: #4a3520; text-shadow: 0 1px 0 rgba(255, 240, 210, .6); }
+  .seal__ring { position: absolute; inset: -4px; border-radius: 50%; border: 2px solid rgba(214, 183, 128, .7); animation: ring 2.4s ease-out infinite; pointer-events: none; }
+  .seal__ring--2 { animation-delay: 1.2s; }
+  @keyframes ring { from { transform: scale(1); opacity: .9; } to { transform: scale(1.7); opacity: 0; } }
+  @keyframes sealBob { 50% { transform: translateY(-6px) rotate(-3deg); } }
+  .seal:active { transform: scale(.94); }
+  @media (max-width: 560px) { .gate__names span { display: block; font-size: .6em; line-height: 1.2; } }
+
+  /* ---------- Подсказка «листайте» ---------- */
+  .hint {
+    position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); z-index: 12;
+    transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    color: #fbefd8; text-align: center; transition: opacity .5s, transform .5s;
+  }
+  .hint.show { opacity: 1; transform: translate(-50%, 0); }
+  .hint.show .hint__auto { pointer-events: auto; }
+  .hint__text { font-size: clamp(20px, 5.4vw, 26px); font-style: italic; text-shadow: 0 2px 14px rgba(0, 0, 0, .8); }
+  .hint__icon { position: relative; width: 34px; height: 58px; border: 2.5px solid #d6b780; border-radius: 20px; }
+  .hint__dot { position: absolute; left: 50%; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: #fbefd8; box-shadow: 0 0 12px #fbefd8; }
+  .hint--touch .hint__dot { animation: swipeUp 1.6s ease-in-out infinite; }
+  .hint--mouse .hint__icon { height: 52px; border-radius: 18px; }
+  .hint--mouse .hint__dot { width: 6px; height: 12px; margin-left: -3px; border-radius: 3px; animation: wheel 1.6s ease-in-out infinite; }
+  .hint--end .hint__icon { border: 0; }
+  .hint--end .hint__dot { display: none; }
+  .hint--end .hint__icon::after { content: '↓'; position: absolute; inset: 0; font-size: 40px; line-height: 58px; color: #d6b780; animation: bounce 1.2s ease-in-out infinite; }
+  .hint--end .hint__auto, .hint:not(.hint--first) .hint__auto { display: none; }
+  @keyframes swipeUp { 0% { top: 70%; opacity: 0; } 20% { opacity: 1; } 80% { top: 14%; opacity: 1; } 100% { top: 8%; opacity: 0; } }
+  @keyframes wheel { 0% { top: 15%; opacity: 1; } 100% { top: 50%; opacity: 0; } }
+  @media (max-height: 760px) {
+    .hint__icon { width: 28px; height: 46px; }
+    .hint--end .hint__icon::after { line-height: 46px; font-size: 34px; }
+    .hint__text { font-size: 19px; }
+  }
+  @keyframes bounce { 50% { transform: translateY(8px); } }
+  .hint__auto {
+    font: italic 18px var(--serif); color: #d6b780; background: rgba(5, 7, 15, .55);
+    border: 1px solid rgba(214, 183, 128, .55); border-radius: 999px; padding: 8px 18px; cursor: pointer;
+  }
+
+  /* ---------- Кнопка автопросмотра ---------- */
+  .autoplay {
+    position: fixed; right: 14px; top: max(14px, env(safe-area-inset-top)); z-index: 13;
+    width: 48px; height: 48px; border-radius: 50%; cursor: pointer;
+    background: rgba(5, 7, 15, .6); border: 1.5px solid rgba(214, 183, 128, .7); color: #f3dcae;
+    display: grid; place-items: center; opacity: 0; pointer-events: none; transition: opacity .5s;
+  }
+  .autoplay.show { opacity: 1; pointer-events: auto; }
+  .autoplay svg { width: 22px; height: 22px; fill: currentColor; }
+  .autoplay .i-pause, .autoplay.is-on .i-play { display: none; }
+  .autoplay.is-on .i-pause { display: block; }
+
+  /* ---------- Детали в ночной гамме ---------- */
+  .details--night {
+    background:
+      radial-gradient(1px 1px at 12% 18%, #fff8 50%, transparent),
+      radial-gradient(1px 1px at 78% 8%, #fff6 50%, transparent),
+      radial-gradient(1.5px 1.5px at 36% 52%, #fff7 50%, transparent),
+      radial-gradient(1px 1px at 88% 64%, #fff6 50%, transparent),
+      radial-gradient(1.5px 1.5px at 22% 86%, #fff5 50%, transparent),
+      linear-gradient(#070a18, #121a3a 60%, #0b1029);
+    color: #f3e9d6; box-shadow: none;
+  }
+  .details--night::before {
+    content: ''; position: absolute; left: 0; right: 0; top: -30vh; height: 30vh; pointer-events: none;
+    background: linear-gradient(rgba(7, 10, 24, 0), #070a18);
+  }
+  .details--night .details__kicker, .details--night .details__lead,
+  .details--night .details__address, .details--night .countdown small { color: #c9bca6; }
+  .details--night .details__card { background: rgba(255, 255, 255, .05); border-color: rgba(214, 183, 128, .35); }
+  .details--night .details__venue { color: #fbefd8; }
+  .details--night .details__date { border-color: rgba(214, 183, 128, .6); }
+  .details--night .btn { color: #f3e9d6; }
+  .details--night .btn--solid, .details--night .btn:hover, .details--night .btn.is-active { background: #d6b780; color: #1a1430; }
+  .details--night .details__sign { color: #d6b780; }
+  @media (max-width: 560px) {
+    .details__date { flex-direction: column; gap: 2px; }
+  }
 </style>
 </head>
 <body>
@@ -56,14 +184,14 @@
   <canvas class="field" id="field"></canvas>
   <div class="pstar" id="his"><div class="pstar__glow"></div><div class="pstar__photo"></div><div class="pstar__label"></div></div>
   <div class="pstar" id="her"><div class="pstar__glow"></div><div class="pstar__photo"></div><div class="pstar__label"></div></div>
-  <div class="overlay intro" id="intro">Где-то во Вселенной зажглись две звезды…<small>листайте вниз ↓</small></div>
-  <div class="overlay yearbox" id="yearbox"><b id="year">1998</b><span>год</span></div>
+  <div class="overlay intro" id="intro">Где-то во Вселенной зажглись две звезды…</div>
+  <div class="overlay yearbox" id="yearbox"><b id="year">1997</b><span>год</span></div>
   <div class="overlay names" id="names"></div>
   <div class="overlay chartbox" id="chartbox">
     <canvas id="chart"></canvas>
     <h3 id="chartTitle"></h3>
-    <p>Именно так будут гореть звёзды в вечер нашей свадьбы</p>
-    <div class="hint">подробности ↓</div>
+    <p>Так будет выглядеть небо в момент, когда начнётся наш праздник</p>
+    <p class="wish">Коснитесь неба и загадайте желание ✨</p>
   </div>
   <div class="flash" id="flash"></div>
 </div>
@@ -71,12 +199,34 @@
 <div class="caption" data-cap="0"></div>
 <div class="caption" data-cap="1">Они долго кружили, не зная друг о друге…</div>
 <div class="caption" data-cap="2">…пока их орбиты не сошлись</div>
-<div class="track" id="track"></div>
-<section class="details" data-details></section>
 
-<script src="assets/common.js?v=3"></script>
-<script src="assets/art.js?v=3"></script>
-<script src="assets/sky.js?v=3"></script>
+<div class="gate" id="gate">
+  <p class="gate__kicker">Приглашение на свадьбу</p>
+  <button class="seal" id="seal" aria-label="Открыть приглашение">
+    <span class="seal__ring"></span><span class="seal__ring seal__ring--2"></span>
+    <span class="seal__face" id="sealFace"></span>
+  </button>
+  <h2 class="gate__names" id="gateNames"></h2>
+  <p class="gate__date" id="gateDate"></p>
+  <p class="gate__tap">Нажмите на печать, чтобы открыть</p>
+</div>
+
+<div class="hint" id="hint">
+  <div class="hint__icon"><span class="hint__dot"></span></div>
+  <div class="hint__text" id="hintText"></div>
+  <button class="hint__auto" id="hintAuto">▶ или смотреть автоматически</button>
+</div>
+<button class="autoplay" id="autoBtn" aria-label="Автопросмотр">
+  <svg class="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg>
+  <svg class="i-pause" viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>
+</button>
+
+<div class="track" id="track"></div>
+<section class="details details--night" data-details id="details"></section>
+
+<script src="assets/common.js?v=5"></script>
+<script src="assets/art.js?v=5"></script>
+<script src="assets/sky.js?v=5"></script>
 <script>
 const w = WEDDING;
 const weddingYear = new Date(w.date).getFullYear();
@@ -84,23 +234,64 @@ const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const ramp = (v, a, b) => clamp((v - a) / (b - a));
 const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 const win = (p, a, b, c, d) => Math.min(ramp(p, a, b), c === undefined ? 1 : 1 - ramp(p, c, d));
+const isTouch = matchMedia('(pointer: coarse)').matches;
+const TRACK_VH = 650;   // длина истории в экранах ×100: меньше — короче скролл
 
 const $ = id => document.getElementById(id);
-const stage = $('stage'), track = $('track'), field = $('field'), ctx = field.getContext('2d');
+const track = $('track'), field = $('field'), ctx = field.getContext('2d');
 const his = $('his'), her = $('her');
+const trackMax = () => track.offsetHeight - innerHeight;
+
+// ---------- Тексты ----------
 his.querySelector('.pstar__photo').innerHTML = Art.star('his');
 her.querySelector('.pstar__photo').innerHTML = Art.star('her');
 his.querySelector('.pstar__label').textContent = `${w.groom} · ${w.hisYear}`;
 her.querySelector('.pstar__label').textContent = `${w.bride} · ${w.herYear}`;
 document.querySelector('[data-cap="0"]').textContent =
   `Звезда ${w.groomGen} зажглась в ${w.hisYear}-м, звезда ${w.brideGen} — в ${w.herYear}-м`;
-$('names').innerHTML = `<h1>${w.groom} <span>&</span> ${w.bride}</h1><p>приглашают вас на свою свадьбу</p><p class="date">${w.dateText}</p>`;
+$('names').innerHTML = `<h1>${w.groom}<br class="br-m"> <span>&</span> ${w.bride}</h1><p>приглашают вас на свою свадьбу</p><p class="date">${w.dateText} · ${weddingTime()}</p>`;
 $('chartTitle').textContent = `Небо над ${w.sky.city} · ${w.dateText} · ${w.sky.timeText}`;
+$('sealFace').textContent = `${w.groom[0]}&${w.bride[0]}`;
+$('gateNames').innerHTML = `${w.groom} <span>&</span> ${w.bride}`;
+$('gateDate').textContent = `${w.dateText} · ${weddingTime()}`;
 
+// Разбиваем текст на буквы, чтобы они проявлялись по очереди
+function splitText(el) {
+  let i = 0;
+  const walk = node => {
+    for (const n of [...node.childNodes]) {
+      if (n.nodeType === 1) { walk(n); continue; }
+      if (n.nodeType !== 3) continue;
+      const frag = document.createDocumentFragment();
+      for (const part of n.textContent.split(/(\s+)/)) {
+        if (!part) continue;
+        if (/^\s+$/.test(part)) { frag.append(' '); continue; }
+        const wd = document.createElement('span');
+        wd.className = 'wd';
+        for (const ch of part) {
+          const s = document.createElement('span');
+          s.className = 'ch';
+          s.style.setProperty('--i', i++);
+          s.textContent = ch;
+          wd.append(s);
+        }
+        frag.append(wd);
+      }
+      n.replaceWith(frag);
+    }
+  };
+  walk(el);
+  el.classList.add('rv');
+}
 const captions = [...document.querySelectorAll('[data-cap]')];
 const capShow = [[0.1, 0.14, 0.24, 0.28], [0.3, 0.34, 0.44, 0.48], [0.5, 0.53, 0.58, 0.61]];
+[...captions, $('intro'), $('names')].forEach(splitText);
+const reveal = (el, o) => {
+  if (o > .3) el.classList.add('on');
+  else if (o < .02) el.classList.remove('on');
+};
 
-// Звёздное поле: точки в «туннеле», камера летит вперёд по скроллу
+// ---------- Звёздное поле ----------
 const ZMAX = 4000, F = 520;
 const stars = Array.from({ length: 1100 }, () => ({
   x: (Math.random() * 2 - 1) * 2.2,
@@ -118,24 +309,80 @@ function resize() {
   U = Math.min(W, H * 0.7) / 100;
   field.width = W * dpr; field.height = H * dpr;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  track.style.height = '1300vh';
+  track.style.height = TRACK_VH + 'vh';
   for (const el of [his, her]) {
-    el.style.width = el.style.height = 30 * U + 'px';
-    el.style.margin = -15 * U + 'px 0 0 ' + -15 * U + 'px';
-    el.querySelector('.pstar__label').style.fontSize = 4.6 * U + 'px';
+    el.style.width = el.style.height = 32 * U + 'px';
+    el.style.margin = -16 * U + 'px 0 0 ' + -16 * U + 'px';
+    el.querySelector('.pstar__label').style.fontSize = Math.max(20, 6.4 * U) + 'px';
   }
   document.fonts.ready.then(() => Sky.draw($('chart'), w.sky));
+}
+
+// ---------- Искры, падающие звёзды ----------
+const parts = [], meteors = [];
+function burst(x, y, n = 40, power = 1) {
+  const cols = ['255,232,180', '255,255,255', '214,183,128', '255,200,210'];
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, v = (50 + Math.random() * 280) * power;
+    parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0, max: .7 + Math.random() * 1.1, r: .8 + Math.random() * 2.4, c: cols[i % cols.length] });
+  }
+}
+function meteor(x, y, big) {
+  const a = (18 + Math.random() * 22) * Math.PI / 180, dir = Math.random() < .5 ? -1 : 1, v = (big ? 1100 : 800) + Math.random() * 400;
+  meteors.push({ x, y, vx: Math.cos(a) * v * dir, vy: Math.sin(a) * v, life: 0, max: big ? 1.1 : .8, len: big ? .12 : .08 });
+}
+function drawFx(dt) {
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
+    if ((p.life += dt) > p.max) { parts.splice(i, 1); continue; }
+    const drag = Math.pow(.15, dt);
+    p.vx *= drag; p.vy = p.vy * drag + 40 * dt;
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    const a = 1 - p.life / p.max;
+    ctx.fillStyle = `rgba(${p.c},${(a * .9).toFixed(3)})`;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r * (0.6 + a * .6), 0, Math.PI * 2); ctx.fill();
+  }
+  for (let i = meteors.length - 1; i >= 0; i--) {
+    const m = meteors[i];
+    if ((m.life += dt) > m.max) { meteors.splice(i, 1); continue; }
+    m.x += m.vx * dt; m.y += m.vy * dt;
+    const a = Math.sin(Math.PI * m.life / m.max);
+    const g = ctx.createLinearGradient(m.x, m.y, m.x - m.vx * m.len, m.y - m.vy * m.len);
+    g.addColorStop(0, `rgba(255,248,230,${a.toFixed(3)})`);
+    g.addColorStop(1, 'rgba(255,248,230,0)');
+    ctx.strokeStyle = g; ctx.lineWidth = 2.2;
+    ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(m.x - m.vx * m.len, m.y - m.vy * m.len); ctx.stroke();
+    ctx.fillStyle = `rgba(255,255,255,${a.toFixed(3)})`;
+    ctx.beginPath(); ctx.arc(m.x, m.y, 2.4, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+// ---------- Параллакс от мыши и наклона телефона ----------
+const off = { x: 0, y: 0, tx: 0, ty: 0 };
+addEventListener('pointermove', e => {
+  if (e.pointerType !== 'mouse') return;
+  off.tx = (e.clientX / W - .5) * 2;
+  off.ty = (e.clientY / H - .5) * 2;
+});
+function onTilt(e) {
+  if (e.gamma == null) return;
+  off.tx = clamp(e.gamma / 25, -1, 1);
+  off.ty = clamp((e.beta - 45) / 25, -1, 1);
 }
 
 // Орбиты: две фото-звезды кружат и сходятся к центру
 function orbit(t, sign) {
   const a = (1 - t) * 2.4 * Math.PI + 0.5;
   const r = 46 * Math.pow(1 - t, 0.9) + 11;
-  return [sign * Math.cos(a) * r, sign * Math.sin(a) * r * 0.62];
+  return [sign * Math.cos(a) * r, sign * Math.sin(a) * r * 0.5 - 8 * (1 - t)];
 }
 
-let camZ = 0;
-function render(p, time) {
+let camZ = 0, prevP = 0, storyText = 0;   // storyText — насколько сейчас виден текст истории
+function render(p, time, dt) {
+  off.x += (off.tx - off.x) * Math.min(1, dt * 3);
+  off.y += (off.ty - off.y) * Math.min(1, dt * 3);
   const t = ease(ramp(p, 0.04, 0.6));
   const prev = camZ;
   camZ = p * 3600 + time * 0.012;
@@ -144,11 +391,12 @@ function render(p, time) {
   // звёзды
   ctx.clearRect(0, 0, W, H);
   const S = Math.min(W, H) * 0.5;
+  const camX = off.x * .3, camY = off.y * .3;
   const dim = 1 - 0.55 * ramp(p, 0.86, 0.94);
   for (const s of stars) {
     const d = ((s.z - camZ) % ZMAX + ZMAX) % ZMAX + 1;
     const k = F / d;
-    const x = W / 2 + s.x * k * S, y = H / 2 + s.y * k * S;
+    const x = W / 2 + (s.x - camX) * k * S, y = H / 2 + (s.y - camY) * k * S;
     if (x < -20 || x > W + 20 || y < -20 || y > H + 20) continue;
     const a = Math.min(1, (ZMAX - d) / 1200) * (0.7 + 0.3 * Math.sin(time * 0.002 + s.tw)) * dim;
     const r = Math.min(3.2, s.m * k * 1.4 + 0.25);
@@ -169,26 +417,35 @@ function render(p, time) {
   const fadeOut = 1 - ramp(p, 0.83, 0.88);
   const sc = 0.12 + 0.88 * ramp(t, 0.05, 0.9);
   const lift = -15 * ease(meet);
+  const px = -off.x * 2, py = -off.y * 2;
   [[his, -1], [her, 1]].forEach(([el, sign]) => {
     let [x, y] = orbit(t, sign);
-    y += lift;
+    x += px; y += lift + py;
     const photoA = ramp(t, 0.03, 0.2);
     el.style.opacity = (win(p, 0.0, 0.03) * fadeOut).toFixed(3);
+    el.style.pointerEvents = fadeOut > .5 && photoA > .5 ? 'auto' : 'none';
     el.style.transform = `translate3d(${x * U}px,${y * U}px,0) scale(${sc.toFixed(3)}) rotate(${sign * 6 * meet}deg)`;
     el.querySelector('.pstar__photo').style.opacity = photoA.toFixed(3);
     el.querySelector('.pstar__label').style.opacity = (ramp(t, 0.2, 0.35) * (1 - meet)).toFixed(3);
 
-    ctx.lineWidth = 1.4;
+    ctx.lineWidth = 1.6;
     for (let i = 0; i < 40; i++) {
       const t0 = Math.max(0, t - 0.22 * (1 - i / 40)), t1 = Math.max(0, t - 0.22 * (1 - (i + 1) / 40));
       const [x0, y0] = orbit(t0, sign), [x1, y1] = orbit(t1, sign);
-      ctx.strokeStyle = `rgba(230,195,130,${(i / 40 * 0.55 * (1 - meet) * fadeOut).toFixed(3)})`;
+      ctx.strokeStyle = `rgba(230,195,130,${(i / 40 * 0.6 * (1 - meet) * fadeOut).toFixed(3)})`;
       ctx.beginPath();
-      ctx.moveTo(W / 2 + x0 * U, H / 2 + (y0 + lift) * U);
-      ctx.lineTo(W / 2 + x1 * U, H / 2 + (y1 + lift) * U);
+      ctx.moveTo(W / 2 + (x0 + px) * U, H / 2 + (y0 + lift + py) * U);
+      ctx.lineTo(W / 2 + (x1 + px) * U, H / 2 + (y1 + lift + py) * U);
       ctx.stroke();
     }
   });
+
+  // встреча: вспышка искр и лёгкая вибрация (один раз при проходе вперёд)
+  if (prevP < 0.625 && p >= 0.625) {
+    burst(W / 2, H / 2, 160, 1.5);
+    vibrate([25, 50, 25]);
+  }
+  prevP = p;
 
   // созвездие-сердце вокруг пары
   const hp = ramp(p, 0.65, 0.76) * fadeOut;
@@ -198,11 +455,11 @@ function render(p, time) {
       const a = i / 16 * Math.PI * 2;
       const hx = 16 * Math.sin(a) ** 3;
       const hy = -(13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a));
-      pts.push([W / 2 + hx * 2.1 * U, H / 2 + (hy * 2.1 - 15) * U]);
+      pts.push([W / 2 + (hx * 2.1 + px) * U, H / 2 + (hy * 2.1 - 15 + py) * U]);
     }
     const n = hp * 16;
     ctx.strokeStyle = `rgba(230,195,130,${(0.8 * fadeOut).toFixed(3)})`;
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = 1.4;
     ctx.beginPath();
     ctx.moveTo(...pts[0]);
     for (let i = 1; i <= Math.ceil(n); i++) {
@@ -213,36 +470,156 @@ function render(p, time) {
     ctx.stroke();
     ctx.fillStyle = `rgba(255,245,225,${fadeOut.toFixed(3)})`;
     for (let i = 0; i <= Math.floor(n); i++) {
-      ctx.beginPath(); ctx.arc(pts[i][0], pts[i][1], 2.2 + (i % 3 === 0 ? 1.2 : 0), 0, Math.PI * 2); ctx.fill();
+      const tw = 2.2 + (i % 3 === 0 ? 1.4 : 0) + Math.sin(time * .004 + i) * .6;
+      ctx.beginPath(); ctx.arc(pts[i][0], pts[i][1], tw, 0, Math.PI * 2); ctx.fill();
     }
   }
 
+  drawFx(dt);
+
   $('flash').style.opacity = (win(p, 0.6, 0.625, 0.625, 0.68) * 0.9).toFixed(3);
-  $('intro').style.opacity = (1 - ramp(p, 0.03, 0.07)).toFixed(3);
+  const io = opened ? 1 - ramp(p, 0.03, 0.07) : 0;
+  $('intro').style.opacity = io.toFixed(3); reveal($('intro'), io);
   $('yearbox').style.opacity = win(p, 0.06, 0.1, 0.58, 0.62).toFixed(3);
   $('year').textContent = Math.round(w.hisYear + (weddingYear - w.hisYear) * t);
-  $('names').style.opacity = win(p, 0.7, 0.76, 0.83, 0.87).toFixed(3);
+  const no = win(p, 0.7, 0.76, 0.83, 0.87);
+  $('names').style.opacity = no.toFixed(3); reveal($('names'), no);
   const cb = win(p, 0.87, 0.94);
   $('chartbox').style.opacity = cb.toFixed(3);
   $('chartbox').style.transform = `translate(-50%,-50%) scale(${(0.9 + 0.1 * cb).toFixed(3)})`;
-  $('nebula').style.transform = `scale(${1 + p * 0.25}) rotate(${p * 8}deg)`;
-  captions.forEach((c, i) => { c.style.opacity = win(p, ...capShow[i]).toFixed(3); });
+  $('nebula').style.transform = `translate(${-off.x * 14}px,${-off.y * 14}px) scale(${1 + p * 0.25}) rotate(${p * 8}deg)`;
+  storyText = no;
+  captions.forEach((c, i) => {
+    const o = win(p, ...capShow[i]);
+    storyText = Math.max(storyText, o);
+    c.style.opacity = o.toFixed(3);
+    reveal(c, o);
+  });
 }
 
-let target = 0, cur = 0, last = performance.now();
-const readScroll = () => { target = clamp(scrollY / (track.offsetHeight - innerHeight)); };
+// ---------- Скролл, автопросмотр, подсказка ----------
+let target = 0, cur = 0, last = performance.now(), lastActive = performance.now();
+let opened = false, auto = false, autoY = 0, nudging = false, hintNow = false;
+const readScroll = () => { target = clamp(scrollY / trackMax()); };
+
+function setAuto(on) {
+  auto = on && cur < 0.995;
+  autoY = scrollY;
+  $('autoBtn').classList.toggle('is-on', auto);
+  lastActive = performance.now();
+}
+['wheel', 'touchstart', 'keydown'].forEach(ev => addEventListener(ev, e => {
+  lastActive = performance.now();
+  hintNow = false;
+  if (auto && !e.target.closest?.('.autoplay, .hint__auto')) setAuto(false);
+}, { passive: true }));
+$('autoBtn').addEventListener('click', () => setAuto(!auto));
+$('hintAuto').addEventListener('click', () => setAuto(true));
+
+const hint = $('hint');
+hint.classList.add(isTouch ? 'hint--touch' : 'hint--mouse');
+function updateHint(now) {
+  if (cur > 0.08) hintNow = false;   // первая подсказка нужна только в самом начале
+  const inDetails = scrollY > trackMax() + innerHeight * .3;
+  const atEnd = cur > 0.97;
+  const show = opened && !auto && !nudging && !inDetails && (hintNow || (now - lastActive > 3500 && storyText < 0.15));
+  hint.classList.toggle('show', show);
+  hint.classList.toggle('hint--end', atEnd);
+  hint.classList.toggle('hint--first', hintNow);
+  $('hintText').textContent = atEnd ? 'Ниже — время, место и ответ'
+    : isTouch ? 'Проведите пальцем вверх' : 'Крутите колёсико мыши';
+  $('autoBtn').classList.toggle('show', opened && !inDetails && cur < 0.995);
+}
+
+// Касание неба: искры, а в финале — падающая звезда-желание
+addEventListener('click', e => {
+  if (!opened || e.target.closest('button, a, .details, .gate')) return;
+  const ps = e.target.closest('.pstar');
+  if (ps) {
+    ps.classList.remove('pop'); void ps.offsetWidth; ps.classList.add('pop');
+    const r = ps.getBoundingClientRect();
+    burst(r.left + r.width / 2, r.top + r.height / 2, 70, 1.1);
+    vibrate(20);
+    return;
+  }
+  if (cur > 0.9 && scrollY <= trackMax() + 5) {
+    meteor(e.clientX, e.clientY, true);
+    burst(e.clientX, e.clientY, 30, .7);
+    showToast('Желание загадано ✨');
+    vibrate(15);
+  } else {
+    burst(e.clientX, e.clientY, 34, .8);
+  }
+});
+
+// Стартовая печать
+function openGate() {
+  if (opened) return;
+  opened = true;
+  nudging = true;
+  const r = $('seal').getBoundingClientRect();
+  burst(r.left + r.width / 2, r.top + r.height / 2, 220, 1.8);
+  vibrate([15, 30, 15]);
+  if (window.DeviceOrientationEvent?.requestPermission) {
+    DeviceOrientationEvent.requestPermission().then(s => { if (s === 'granted') addEventListener('deviceorientation', onTilt); }).catch(() => {});
+  } else {
+    addEventListener('deviceorientation', onTilt);
+  }
+  $('gate').classList.add('is-open');
+  document.documentElement.classList.remove('locked');
+  setTimeout(() => $('gate').remove(), 1300);
+  // Сами чуть-чуть «пролетаем» вперёд — так сразу видно, что скролл двигает камеру
+  setTimeout(() => {
+    const from = scrollY, to = trackMax() * 0.045, t0 = performance.now();
+    const step = now => {
+      const k = ramp(now - t0, 0, 1800);
+      scrollTo(0, from + (to - from) * ease(k));
+      if (k < 1) requestAnimationFrame(step);
+      else { nudging = false; hintNow = true; }
+    };
+    requestAnimationFrame(step);
+  }, 700);
+}
+$('seal').addEventListener('click', openGate);
+// Пока печать закрыта, страница не скроллится (на iPhone overflow:hidden не всегда хватает)
+addEventListener('touchmove', e => { if (!opened) e.preventDefault(); }, { passive: false });
+
+let nextMeteor = performance.now() + 3000;
 function loop(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
+  if (auto) {
+    // медленнее на встрече, приглашении и карте неба
+    const pace = cur > 0.6 ? 0.5 : 1;
+    autoY = Math.min(trackMax(), autoY + trackMax() / 26 * pace * dt);
+    scrollTo(0, autoY);
+    if (autoY >= trackMax()) setAuto(false);
+  }
   cur += (target - cur) * (1 - Math.pow(0.0015, dt));
-  render(cur, now);
+  if (now > nextMeteor) {
+    meteor(Math.random() * W, Math.random() * H * 0.35, false);
+    nextMeteor = now + 3500 + Math.random() * 6000;
+  }
+  render(cur, now, dt);
+  updateHint(now);
   requestAnimationFrame(loop);
 }
 addEventListener('resize', () => { resize(); readScroll(); });
-addEventListener('scroll', readScroll, { passive: true });
+addEventListener('scroll', () => {
+  readScroll();
+  if (!auto && !nudging) lastActive = performance.now();
+}, { passive: true });
 resize();
+// Вернулись на страницу посередине (перезагрузка) — печать не показываем
+if (scrollY > 40) {
+  opened = true;
+  $('gate').remove();
+  document.documentElement.classList.remove('locked');
+  addEventListener('deviceorientation', onTilt);
+}
 readScroll();
 cur = target;
+prevP = cur;
 requestAnimationFrame(loop);
 </script>
 </body>
