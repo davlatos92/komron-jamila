@@ -11,8 +11,8 @@ const WEDDING = {
   venue: '«Дидор»',
   address: 'г. Душанбе',
   mapUrl: 'https://yandex.tj/maps/-/CXfL6EI0',
-  // Ссылка веб-приложения Google Apps Script (см. apps-script/Code.gs) — сюда приходят ответы гостей
-  api: '',
+  // Сюда приходят ответы гостей: server/api.php на хостинге (или веб-приложение apps-script/Code.gs)
+  api: 'https://test.yanger-group.com/api.php',
   // Небо для карты звёзд (концепция B) — в момент начала праздника
   sky: { lat: 38.56, lon: 68.78, city: 'Душанбе', time: '2026-11-09T18:00:00+05:00', timeText: '18:00' },
 };
